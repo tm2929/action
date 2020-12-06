@@ -1,9 +1,14 @@
-3dAction/.vs
-3dAction/cereal-1.2.2
-3dAction/Data
-3dAction/Debug
-3dAction/DirectXTex
-3dAction/Effekseer_incl
-3dAction/FBX SDK
-3dAction/imgui
-3dAction/x64
+.vs
+cereal-1.2.2
+Data
+Debug
+DirectXTex
+Effekseer_incl
+FBX SDK
+imgui
+x64
+3DGameLib.VC.db
+3DGameLib.sln
+3DGameLib.vcxproj
+3DGameLib.vcxproj.filters
+imgui.ini
