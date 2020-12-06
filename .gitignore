@@ -11,4 +11,5 @@ x64
 3DGameLib.sln
 3DGameLib.vcxproj
 3DGameLib.vcxproj.filters
+3DGameLib.vcxproj.user
 imgui.ini
