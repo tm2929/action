@@ -134,10 +134,11 @@ void SceneGame::LightUpdate(float elapsed_time)
 				playerSp= std::make_unique<Ui>(device, L"Data/images/PlayerSp01.png");
 				playerSpMax = std::make_unique<Sprite>(device, L"Data/images/PlayerSpFrame01.png");
 
+				//背景
 				skyTexture = std::make_shared<Texture>();
 				skyTexture->Load(device, L"Data/images/aaas.jpg");
 				skyCube = std::make_unique<TexMeshObj>();
-				skyCube->Create(device, VECTOR3(2000, 1000, 2000), VECTOR3(0, 0, 0), VECTOR3(0, 100, 0), TexMeshObj::ObjectType::GeometricCube, skyTexture);
+				skyCube->Create(device, VECTOR3(2000, 1000, 2000), VECTOR3(0, 0, 0), VECTOR3(0, 300, 0), TexMeshObj::ObjectType::GeometricCube, skyTexture);
 
 				/*bisuko_texture = std::make_unique<Texture>();
 				bisuko_texture->Load(device, L"Data/ASSETS/bisuko.jpg");
@@ -165,13 +166,13 @@ void SceneGame::LightUpdate(float elapsed_time)
 				pHitAreaRender.Create(device);
 
 				AttackLine::GetInctance().Create(device);
-
 				vibrationRange = 0.01f;
 				vibrationTime = 0.1f;
 				state = STATE::GAME;
 				firstFlag = true;
 				clearFlag = false;
 				overFlag = false;
+
 			}, device);
 		//ロード中テクスチャ
 		nowLoading = std::make_unique<Sprite>(device, L"Data/images/NOW_LOADING.png");
@@ -180,7 +181,8 @@ void SceneGame::LightUpdate(float elapsed_time)
 		blendGame[1] = std::make_unique<BlendState>(device, BLEND_MODE::ADD);
 		//サウンドの初期化
 		soundManager = std::make_unique<SoundManager>(hwnd);
-		soundBGM = soundManager->CreateSoundSource("Data/sounds/BGM.wav");
+		soundManager->CreateSoundSourceGame();
+		//soundBGM = soundManager->CreateSoundSource("Data/sounds/BGM.wav");
 		//soundBGM->Play(true);
 #ifdef USE_IMGUI
 		hitRenderFlag = true;
@@ -203,7 +205,7 @@ void SceneGame::LightUpdate(float elapsed_time)
 		ImGui::Image(shadowmap->GetDepthStencilShaderResourceView().Get(), ImVec2(200, 200));
 		ImGui::End();
 		ImGui::Begin("GAME");
-		ImGui::ColorEdit3("c", (float*)&trajectory->color);
+		ImGui::ColorEdit3(u8"軌跡色", (float*)&trajectory->color);
 		ImGui::ShowDemoWindow();
 
 		if (ImGui::CollapsingHeader("SCENE"))
@@ -226,6 +228,13 @@ void SceneGame::LightUpdate(float elapsed_time)
 		if (ImGui::Button(u8"当たり判定表示"))
 		{
 			hitRenderFlag = !hitRenderFlag;
+		}
+		//sound
+		if (ImGui::CollapsingHeader("SOUND"))
+		{
+			if (ImGui::Button("ATTACK1"))soundManager->Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE1), false);
+			if (ImGui::Button("ATTACK2"))soundManager->Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE2), false);
+			if (ImGui::Button("ATTACK3"))soundManager->Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE3), false);				
 		}
 		//エフェクト
 		if (ImGui::CollapsingHeader("EFFECT"))
@@ -441,17 +450,23 @@ void SceneGame::LightUpdate(float elapsed_time)
 
 		if (pFadeOut.Update(elapsed_time))
 		{
+			soundManager->Stop(static_cast<int>(SoundManager::SOUNDGAME::GAME_BGM));
 			if (state == STATE::CLEAR) return SceneName::CLEAR;
 			else if (state == STATE::OVER) return SceneName::OVER;
 			else return SceneName::TITLE;
+
 		}
 		switch (state)
 		{
 		case STATE::GAME:
+			if (bossEnemy->attackStartFlag)
+			{
+				soundManager->Play(static_cast<int>(SoundManager::SOUNDGAME::GAME_BGM, true));
+			}
 
 			pHitAreaRender.Clear();
-			soundBGM->SetPan(pan);
-			soundBGM->SetVolume(volume);
+			//soundBGM->SetPan(pan);
+			//soundBGM->SetVolume(volume);
 			//tstcube->Update();
 			player->Update(elapsed_time);
 			Camera::GetInstance().SetTarget(DirectX::XMFLOAT3(player->GetObj()->GetPosition().x, player->GetObj()->GetHeadPosition().y, player->GetObj()->GetPosition().z));

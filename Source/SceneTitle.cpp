@@ -26,7 +26,9 @@ SceneTitle::SceneTitle(ID3D11Device* device, HWND hwnd)
 #endif
 			colorChangeFlag = false;
 		}, device);
-
+	soundManager = std::make_unique<SoundManager>(hwnd);
+	soundManager->CreateSoundSourceTitle();
+	soundManager->Play(static_cast<int>(SoundManager::SOUNDTITLE::TITLE_BGM), true);
 	blend = std::make_unique<BlendState>(device, BLEND_MODE::ALPHA);
 }
 
@@ -40,6 +42,7 @@ int SceneTitle::Update(float elapsed_time)
 
 	if (pFadeOut.Update(elapsed_time))
 	{
+		soundManager->Stop(static_cast<int>(SoundManager::SOUNDTITLE::TITLE_BGM));
 		return SceneName::GAME;
 	}
 	if (KeyInput::KeyTrigger() & KEY_ENTER || input::ButtonRisingState(0, input::PadLabel::A))

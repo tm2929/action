@@ -196,6 +196,36 @@ std::unique_ptr<SoundSource> SoundManager::CreateSoundSource(const char* filenam
 
 }
 
+void SoundManager::CreateSoundSourceGame()
+{
+	SoundData sounddata[] =
+	{
+		{static_cast<int>(SOUNDGAME::GAME_BGM),"Data/sounds/GAMEBGM.wav"},
+		{static_cast<int>(SOUNDGAME::ATTACK_VOICE1),"Data/sounds/attack/çUåÇÇ¢Ç‚ÅI.wav"},
+		{static_cast<int>(SOUNDGAME::ATTACK_VOICE2),"Data/sounds/attack/çUåÇÇÕÇüÇ¡ÅI.wav"},
+		{static_cast<int>(SOUNDGAME::ATTACK_VOICE3),"Data/sounds/attack/çUåÇÇƒÇ¢.wav"},
+	};
+	int size = sizeof(sounddata) / sizeof(SoundData);
+	for (int i = 0; i < size; i++)
+	{
+		sound.emplace_back(std::make_unique<SoundSource>(directSound, sounddata[i].soundfile));
+	}
+}
+
+void SoundManager::CreateSoundSourceTitle()
+{
+	SoundData sounddata[] =
+	{
+		{static_cast<int>(SOUNDTITLE::TITLE_BGM),"Data/sounds/title.wav"},
+
+	};
+	int size = sizeof(sounddata) / sizeof(SoundData);
+	for (int i = 0; i < size; i++)
+	{
+		sound.emplace_back(std::make_unique<SoundSource>(directSound, sounddata[i].soundfile));
+	}
+}
+
 // WAVEÉfÅ[É^
 Wave::Wave(const char* filename)
 {

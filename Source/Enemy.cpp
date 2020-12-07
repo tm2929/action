@@ -75,6 +75,8 @@ Enemy::Enemy(std::shared_ptr<ModelResource> resource)
 	enemyObj->SetHighAttackFlag(false);
 
 	enemyObj->GetModel()->SetBlendTime(5.0f);
+
+	attackStartFlag = false;
 }
 void Enemy::Update(float elapsedTime)
 {
@@ -359,6 +361,7 @@ void Enemy::SetFirstState()
 
 	waiteTime = 0;
 	actionState = ACTION::FIRST;
+
 }
 void Enemy::UpdateFirstState(float elapsedTime)
 {
@@ -372,13 +375,14 @@ void Enemy::UpdateFirstState(float elapsedTime)
 			animNo = static_cast<int>(ANIM::DAMAGE3);
 			enemyObj->SetAnim(animNo, false);
 			actionState = ACTION::SECOND;
-
+			attackStartFlag = true;
 			EffectObj::GetInstance().SetScale(EffectObj::TYPE::BLACKMIST, DirectX::XMFLOAT3(10, 40, 10));
 			EffectObj::GetInstance().SetColor(EffectObj::TYPE::BLACKMIST, DirectX::XMFLOAT4(1, 1, 1, 0.2f));
 			EffectObj::GetInstance().Play(EffectObj::TYPE::BLACKMIST);
 		}
 		break;
 	case ACTION::SECOND:
+		attackStartFlag = false;
 		if (!enemyObj->GetAnimContinue())
 		{
 			waiteTime += elapsedTime;

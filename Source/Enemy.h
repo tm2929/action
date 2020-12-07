@@ -15,6 +15,7 @@ public:
 	Model* GetModel() { return enemyObj->GetModel(); }
 	std::shared_ptr<EnemyObj> GetObj() { return enemyObj; }
 	EnemyThunderData GetThunderData() { return thunderData; }
+	bool attackStartFlag = false;//戦闘開始フラグ
 private:
 	enum class STATE
 	{
@@ -129,7 +130,7 @@ private:
 	//playerとの距離を求める
 	void CalculateLength();
 private:
-	bool debugFlag = false ;//各stateを自分で呼ぶ用
+	bool debugFlag = false;//各stateを自分で呼ぶ用
 	float power = 0.f;
 	float animSpeed = 1.0f;;//アニメーション速度調整用
 	float animTime = 0.f;//アニメーション時間
@@ -151,7 +152,7 @@ private:
 	DirectX::XMVECTOR dir;
 	float dot;
 	DirectX::XMFLOAT3 cross;
-	bool attackMoveFlag;//ひとつ前のstateが攻撃ならtrue
+	bool attackMoveFlag = false;//ひとつ前のstateが攻撃ならtrue
 	int   number;
 	int   beforeNumber;//choice時numを保存
 	//ショット時

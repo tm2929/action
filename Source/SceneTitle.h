@@ -7,9 +7,11 @@
 #include "ModelRenderer.h"
 #include "Sprite.h"
 #include "BlendState.h"
+#include "Sound.h"
 class  SceneTitle : public Scene
 {
 private:
+	std::unique_ptr<SoundManager>soundManager;
 	std::unique_ptr<ModelRenderer>modelRenderer;
 	std::unique_ptr<Obj3D> obj;
 	std::unique_ptr<BlendState> blend; 

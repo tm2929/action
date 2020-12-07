@@ -29,17 +29,43 @@ class SoundManager
 {
 public:
 	SoundManager(HWND hWnd);
-	void Init();
 	~SoundManager();
+	void CreateSoundSourceGame();
+	void CreateSoundSourceTitle();
 
 	std::unique_ptr<SoundSource> CreateSoundSource(const char* filename);
+	void Play(int soundNo, bool loop = false)
+	{
+		sound.at(soundNo)->Play(loop);
+	}
+	void Stop(int soundNo)
+	{
+		sound.at(soundNo)->Stop();
+	}
+	void Volume(int soundNo, float volume)
+	{
+		sound.at(soundNo)->SetVolume(volume);
+	}
+	void Pan(int soundNo, float pan)
+	{
+		sound.at(soundNo)->SetPan(pan);
+	}
 	std::vector<std::unique_ptr<SoundSource>>soundVec;
-	enum SOUND
+	enum class SOUNDGAME
 	{
 		GAME_BGM,//ÉQÅ[ÉÄBGM
-
+		ATTACK_VOICE1,//çUåÇéûê∫
+		ATTACK_VOICE2,
+		ATTACK_VOICE3,
+		ATTACK_VOICE4,
+	};
+	enum class SOUNDTITLE
+	{
+		TITLE_BGM,//ÉQÅ[ÉÄBGM
 	};
 private:
+	std::vector<std::unique_ptr<SoundSource>>sound;
+
 	IDirectSound8* directSound = nullptr;
 	IDirectSoundBuffer* primaryBuffer = nullptr;
 };
