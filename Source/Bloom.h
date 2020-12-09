@@ -14,6 +14,15 @@
 class Bloom
 {
 public:
+
+	Bloom(ID3D11Device* device, unsigned int width, unsigned int height);
+	~Bloom() = default;
+	Bloom(Bloom&) = delete;
+	Bloom& operator =(Bloom&) = delete;
+
+	void Bloom::Generate(ID3D11DeviceContext* immediate_context, ID3D11ShaderResourceView* hdr_texture);
+	void Blit(ID3D11DeviceContext* immediate_context);
+private:
 	struct ShaderConstants
 	{
 		float growExtractionThreshold = 1.500f;;
@@ -23,20 +32,23 @@ public:
 	};
 	std::unique_ptr<ConstantBuffer<ShaderConstants>>constantBuffer;
 
-	Bloom(ID3D11Device* device, unsigned int width, unsigned int height);
-	~Bloom() = default;
-	Bloom(Bloom&) = delete;
-	Bloom& operator =(Bloom&) = delete;
-
-	void Bloom::Generate(ID3D11DeviceContext* immediate_context, ID3D11ShaderResourceView* hdr_texture);
-	void Blit(ID3D11DeviceContext* immediate_context);
-
+public:
+	const std::unique_ptr<ConstantBuffer<ShaderConstants>>& GetConstantBuffer()const { return constantBuffer; }
+	void SetGrowExtractionThreshold(float growExtractionThreshold)
+	{
+		constantBuffer->data.growExtractionThreshold = growExtractionThreshold;
+	}
+	void SetBlurConvolutionIntensity(float blurConvolutionIntensity)
+	{
+		constantBuffer->data.blurConvolutionIntensity = blurConvolutionIntensity;
+	}
+	float GetGrowExtractionThreshold() const { return constantBuffer->data.growExtractionThreshold; }
+	//const DirectX::XMFLOAT3& GetColor() { return color; }
 	std::unique_ptr<FrameBuffer> glowExtraction;
 	std::unique_ptr<FrameBuffer> gaussianBlur[5][2];//‚Ú‚©‚µ
 
 	std::unique_ptr<FullscreenQuad>fullscreenQuad;
 
-private:
 	enum { LINEAR_BORDER, POINT, LINEAR, ANISOTROPIC };
 	std::unique_ptr<Sampler> samplerStates[4];
 	std::unique_ptr<BlendState> blendState;

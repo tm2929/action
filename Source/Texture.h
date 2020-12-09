@@ -18,6 +18,7 @@ public:
     void Set(ID3D11DeviceContext* context, UINT Slot = 0, BOOL flg = true);
     UINT GetWidth() { return texture2dDesc.Width; }
     UINT GetHeight() { return texture2dDesc.Height; }
+
     bool Create(ID3D11Device* device, u_int width, u_int height, DXGI_FORMAT format);
 
     ID3D11RenderTargetView* GetRenderTarget() { return renderTargetView.Get(); }

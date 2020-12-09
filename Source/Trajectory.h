@@ -15,9 +15,10 @@ public:
 	void SwapPosition();
 	void SetStartPosition(const DirectX::XMFLOAT3 startPosition) { this->startPosition = startPosition; }
 	void SetEndPosition(const DirectX::XMFLOAT3 endPosition) { this->endPosition = endPosition; }
-	DirectX::XMFLOAT3 color = { 1.f,0.5f,0.1f };
+	void SetColor(const DirectX::XMFLOAT3 color) { this->color = color; }
+	const DirectX::XMFLOAT3& GetColor() { return color; }
 private:
-	
+	DirectX::XMFLOAT3 color = { 1.f,0.5f,0.1f };
 	float w;
 	struct Data
 	{
@@ -30,7 +31,7 @@ private:
 		DirectX::XMFLOAT4 color;
 		DirectX::XMFLOAT2 texcoord;
 	};
-	 std::vector<vertex> vertices;
+	std::vector<vertex> vertices;
 	//vertex vertices[VERTEXNUM];
 	DirectX::XMFLOAT3 position;
 

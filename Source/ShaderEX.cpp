@@ -6,6 +6,8 @@
 #include<map>
 #include <wrl.h>
 #include<string>
+#include "ShaderEX.h"
+#include <stdlib.h>
 
 HRESULT create_vs_from_cso(ID3D11Device* device, const char* cso_name, ID3D11VertexShader** vertex_shader, ID3D11InputLayout** input_layout, D3D11_INPUT_ELEMENT_DESC* input_element_desc, UINT num_elements, bool enableCaching)
 {
@@ -153,30 +155,25 @@ HRESULT create_cs_from_cso(ID3D11Device* device, const char* cso_name, ID3D11Com
 	return hr;
 }
 
-//HRESULT load_texture_from_file(ID3D11Device* device, const wchar_t* file_name, ID3D11ShaderResourceView** shader_resource_view, D3D11_TEXTURE2D_DESC* texture2d_desc)
-//{
-//	HRESULT hr = S_OK;
-//	Microsoft::WRL::ComPtr<ID3D11Resource> resource;
-//	static std::map<std::wstring, Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> cache;
-//	auto it = cache.find(file_name);
-//	if (it != cache.end())
-//	{
-//		//it->second.Attach(*shader_resource_view);
-//		*shader_resource_view = it->second.Get();
-//		(*shader_resource_view)->AddRef();
-//		(*shader_resource_view)->GetResource(resource.GetAddressOf());
-//	}
-//	else
-//	{
-//		// UNIT.04
-//		hr = DirectX::CreateWICTextureFromFile(device, file_name, resource.GetAddressOf(), shader_resource_view);
-//		_ASSERT_EXPR(SUCCEEDED(hr), HRTrace(hr));
-//		cache.insert(std::make_pair(file_name, *shader_resource_view));
-//	}
-//	Microsoft::WRL::ComPtr<ID3D11Texture2D> texture2d;
-//	hr = resource.Get()->QueryInterface<ID3D11Texture2D>(texture2d.GetAddressOf());
-//	_ASSERT_EXPR(SUCCEEDED(hr), HRTrace(hr));
-//	texture2d->GetDesc(texture2d_desc);
-//
-//	return hr;
-//}
+D3D11_INPUT_ELEMENT_DESC input_element_desc[] =
+{
+	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0,D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+};
+bool ShaderEx::Create(ID3D11Device* device,const char* vsfilename, const char* psfilename)
+{
+	Microsoft::WRL::ComPtr<ID3D11DeviceContext>immediate_context;
+	device->GetImmediateContext(immediate_context.GetAddressOf());
+	UINT numElements = sizeof(input_element_desc) / sizeof(input_element_desc[0]);
+	//ワイド文字からマルチバイト文字へ変換
+	create_vs_from_cso(device, vsfilename, VS.GetAddressOf(), VertexLayout.GetAddressOf(), input_element_desc, numElements);
+
+	create_ps_from_cso(device, psfilename, PS.GetAddressOf());
+
+	// 入力レイアウト設定
+	immediate_context->IASetInputLayout(VertexLayout.Get());
+
+	return false;
+}
