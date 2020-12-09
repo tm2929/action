@@ -13,6 +13,7 @@
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
 #endif
 #include "Fadeout.h"
+#include "Sound.h"
 Player::Player(std::shared_ptr<ModelResource> resource, std::shared_ptr<ModelResource> weaponResource)
 {
 	playerObj = std::make_unique<PlayerObj>(resource);
@@ -685,6 +686,8 @@ void Player::SetAttackState()
 	angle = playerObj->GetAngle();
 	prevState = state;
 
+	//SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE1), false);
+	SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING), false);
 }
 void Player::UpdateAttackState(float elapsedTime)
 {
@@ -723,12 +726,13 @@ void Player::UpdateAttackState(float elapsedTime)
 		//モーション終わる前に押したら二撃目へ
 		if (count > hitData.attackTime && (KeyInput::KeyTrigger() & KEY_Z || input::ButtonRisingState(0, input::PadLabel::X)))
 		{
-			//animSpeed = 1.5f;
 			animNo = static_cast<int>(ANIM::ATTACK2);
 			playerObj->SetAnim(animNo, false);
 			count = 0;
 			action = ACTION::SECOND;
 			playerObj->SetAttackFlag(false);
+			//SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE2), false);
+			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING), false);
 		}
 		//攻撃から戻るモーションに
 		else if (!playerObj->GetAnimContinue())
@@ -756,6 +760,8 @@ void Player::UpdateAttackState(float elapsedTime)
 			action = ACTION::SECOND;
 			hitData.pulsDamage = hitData.attackPower[2];
 			playerObj->SetAttackFlag(false);
+			//SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE2), false);
+			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING), false);
 		}
 		else if (!playerObj->GetModel()->GetBlendFlag())
 		{
@@ -780,6 +786,8 @@ void Player::UpdateAttackState(float elapsedTime)
 			action = ACTION::THIRD;
 			hitData.pulsDamage = hitData.attackPower[2];
 			playerObj->SetAttackFlag(false);
+			//SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE3), false);
+			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING), false);
 		}
 		else if (!playerObj->GetAnimContinue())
 		{
@@ -805,6 +813,7 @@ void Player::UpdateAttackState(float elapsedTime)
 			action = ACTION::THIRD;
 			hitData.pulsDamage = hitData.attackPower[2];
 			playerObj->SetAttackFlag(false);
+			//SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE3), false);
 		}
 		else if (!playerObj->GetModel()->GetBlendFlag())
 		{
@@ -1015,6 +1024,8 @@ void Player::SetRushState()
 		playerObj->SetAttackFlag(true);
 		playerObj->SetDamageFlag(false);
 	}
+	//SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE4), false);
+
 }
 void Player::UpdateRushState(float elapsedTime)
 {

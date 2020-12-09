@@ -10,6 +10,14 @@
 // WAVEタグ作成マクロ
 #define MAKE_WAVE_TAG_VALUE(c1, c2, c3, c4)  ( c1 | (c2<<8) | (c3<<16) | (c4<<24) )
 
+#ifdef USE_IMGUI
+#include <imgui.h>
+#include <imgui_impl_dx11.h>
+#include <imgui_impl_win32.h>
+#include <imgui_internal.h>
+
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
+#endif
 // 音源
 SoundSource::SoundSource(IDirectSound8* ds, const char* filename)
 {
@@ -139,7 +147,7 @@ void SoundSource::SetPan(float pan)
 
 	soundBuffer->SetPan(decibel);
 }
-
+SoundManager* SoundManager::soundManager = nullptr;
 // サウンドマネージャー
 SoundManager::SoundManager(HWND hWnd)
 {
@@ -188,6 +196,7 @@ SoundManager::~SoundManager()
 		directSound->Release();
 		directSound = nullptr;
 	}
+	sound.clear();
 }
 
 std::unique_ptr<SoundSource> SoundManager::CreateSoundSource(const char* filename)
@@ -204,6 +213,8 @@ void SoundManager::CreateSoundSourceGame()
 		{static_cast<int>(SOUNDGAME::ATTACK_VOICE1),"Data/sounds/attack/攻撃いや！.wav"},
 		{static_cast<int>(SOUNDGAME::ATTACK_VOICE2),"Data/sounds/attack/攻撃はぁっ！.wav"},
 		{static_cast<int>(SOUNDGAME::ATTACK_VOICE3),"Data/sounds/attack/攻撃てい.wav"},
+		{static_cast<int>(SOUNDGAME::ATTACK_VOICE3),"Data/sounds/attack/攻撃んはあ.wav"},
+		{static_cast<int>(SOUNDGAME::SWING),"Data/sounds/Swing.wav"},
 	};
 	int size = sizeof(sounddata) / sizeof(SoundData);
 	for (int i = 0; i < size; i++)
@@ -224,6 +235,28 @@ void SoundManager::CreateSoundSourceTitle()
 	{
 		sound.emplace_back(std::make_unique<SoundSource>(directSound, sounddata[i].soundfile));
 	}
+}
+
+void SoundManager::Imgui()
+{
+	static float volume = 1.0f;
+	if (ImGui::CollapsingHeader("Volume"))
+	{
+		ImGui::InputFloat("volume", &volume, 0.1f);
+		if (ImGui::Button("GAMEBGM_V"))SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::GAME_BGM), volume);
+		if (ImGui::Button("ATTACK1_V"))SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE1), volume);
+		if (ImGui::Button("ATTACK2_V"))SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE2), volume);
+		if (ImGui::Button("ATTACK3_V"))SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE3), volume);
+		if (ImGui::Button("ATTACK4_V"))SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE4), volume);
+		if (ImGui::Button("SWING_V"))SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::SWING), volume);
+	}
+
+	if (ImGui::Button("GAMEBGM")) SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::GAME_BGM), false);
+	if (ImGui::Button("ATTACK1"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE1), false);
+	if (ImGui::Button("ATTACK2"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE2), false);
+	if (ImGui::Button("ATTACK3"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE3), false);
+	if (ImGui::Button("ATTACK4"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE4), false);
+	if (ImGui::Button("SWING"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING), false);
 }
 
 // WAVEデータ

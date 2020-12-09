@@ -164,8 +164,10 @@ private:
 	bool firstFlag = false;
 	bool resultflag = false;//true クリア　false オーバー
 
-	std::unique_ptr<SoundManager>					soundManager;
-	std::unique_ptr<SoundSource>					soundSE;
-	std::unique_ptr<SoundSource>					soundBGM;
+	//std::unique_ptr<SoundManager>					soundManager;
+
+
+	//画像tst
+	std::unique_ptr<Shader>shader;
 };
 

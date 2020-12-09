@@ -32,9 +32,9 @@ public:
 	~SoundManager();
 	void CreateSoundSourceGame();
 	void CreateSoundSourceTitle();
-
+	void Imgui();
 	std::unique_ptr<SoundSource> CreateSoundSource(const char* filename);
-	void Play(int soundNo, bool loop = false)
+	void Play( int soundNo, bool loop = false)
 	{
 		sound.at(soundNo)->Play(loop);
 	}
@@ -50,7 +50,6 @@ public:
 	{
 		sound.at(soundNo)->SetPan(pan);
 	}
-	std::vector<std::unique_ptr<SoundSource>>soundVec;
 	enum class SOUNDGAME
 	{
 		GAME_BGM,//ÉQÅ[ÉÄBGM
@@ -58,12 +57,30 @@ public:
 		ATTACK_VOICE2,
 		ATTACK_VOICE3,
 		ATTACK_VOICE4,
+		SWING
 	};
 	enum class SOUNDTITLE
 	{
 		TITLE_BGM,//ÉQÅ[ÉÄBGM
 	};
+	static void Create(HWND hWnd)
+	{
+		if (soundManager != nullptr)return;
+		soundManager = new SoundManager(hWnd);
+	}
+	static SoundManager& getinctance()
+	{
+		return *soundManager;
+	}
+	static void Destroy()
+	{
+		if (soundManager == nullptr)return;
+		delete(soundManager);
+		soundManager = nullptr;
+	}
 private:
+	static SoundManager* soundManager;
+	std::vector<std::unique_ptr<SoundSource>>soundVec;
 	std::vector<std::unique_ptr<SoundSource>>sound;
 
 	IDirectSound8* directSound = nullptr;

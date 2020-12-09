@@ -8,15 +8,22 @@
 #include "Sprite.h"
 #include "BlendState.h"
 #include "Sound.h"
+#include "Sampler.h"
+#include "RasterizerState.h"
+#include "ShaderEX.h"
 class  SceneTitle : public Scene
 {
 private:
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv;
+	std::unique_ptr<RasterizerState>rasterizer;
+	std::shared_ptr<Sampler>samplerWrap;
 	std::unique_ptr<SoundManager>soundManager;
 	std::unique_ptr<ModelRenderer>modelRenderer;
 	std::unique_ptr<Obj3D> obj;
 	std::unique_ptr<BlendState> blend; 
 	std::unique_ptr<Sprite>titleTex;
 	DirectX::XMFLOAT3 color = { 1,1,1 };
+	std::unique_ptr<ShaderEx>dissolveShader;
 	bool colorChangeFlag = false;
 public:
 	std::unique_ptr<std::thread> loading_thread;

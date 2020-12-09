@@ -173,6 +173,8 @@ void SceneGame::LightUpdate(float elapsed_time)
 				clearFlag = false;
 				overFlag = false;
 
+				shader = std::make_unique<ShaderEx>();
+				shader->CreateSprite(device);
 			}, device);
 		//ロード中テクスチャ
 		nowLoading = std::make_unique<Sprite>(device, L"Data/images/NOW_LOADING.png");
@@ -180,8 +182,10 @@ void SceneGame::LightUpdate(float elapsed_time)
 		blendGame[0] = std::make_unique<BlendState>(device, BLEND_MODE::ALPHA);
 		blendGame[1] = std::make_unique<BlendState>(device, BLEND_MODE::ADD);
 		//サウンドの初期化
-		soundManager = std::make_unique<SoundManager>(hwnd);
-		soundManager->CreateSoundSourceGame();
+		SoundManager::getinctance().Create(hwnd);
+		SoundManager::getinctance().CreateSoundSourceGame();
+		//soundManager = std::make_unique<SoundManager>(hwnd);
+		//soundManager->CreateSoundSourceGame();
 		//soundBGM = soundManager->CreateSoundSource("Data/sounds/BGM.wav");
 		//soundBGM->Play(true);
 #ifdef USE_IMGUI
@@ -205,7 +209,9 @@ void SceneGame::LightUpdate(float elapsed_time)
 		ImGui::Image(shadowmap->GetDepthStencilShaderResourceView().Get(), ImVec2(200, 200));
 		ImGui::End();
 		ImGui::Begin("GAME");
-		ImGui::ColorEdit3(u8"軌跡色", (float*)&trajectory->color);
+		DirectX::XMFLOAT3 trajectoryColor = trajectory->GetColor();
+		ImGui::ColorEdit3(u8"軌跡色", (float*)&trajectoryColor);
+		trajectory->SetColor(trajectoryColor);
 		ImGui::ShowDemoWindow();
 
 		if (ImGui::CollapsingHeader("SCENE"))
@@ -232,9 +238,7 @@ void SceneGame::LightUpdate(float elapsed_time)
 		//sound
 		if (ImGui::CollapsingHeader("SOUND"))
 		{
-			if (ImGui::Button("ATTACK1"))soundManager->Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE1), false);
-			if (ImGui::Button("ATTACK2"))soundManager->Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE2), false);
-			if (ImGui::Button("ATTACK3"))soundManager->Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE3), false);				
+			SoundManager::getinctance().Imgui();
 		}
 		//エフェクト
 		if (ImGui::CollapsingHeader("EFFECT"))
@@ -361,10 +365,9 @@ void SceneGame::LightUpdate(float elapsed_time)
 			ImGui::SliderFloat("colorB", &lightColor.z, 0, 10);
 			ImGui::SliderFloat("colorA", &lightColor.w, 0, 100.0f);
 
-			float threshold = bloomEffect->constantBuffer->data.growExtractionThreshold;
-			ImGui::InputFloat(u8"しきい値", &threshold, 0.1f);
-			bloomEffect->constantBuffer->data.growExtractionThreshold = threshold;
-
+			float bloomThreshold = bloomEffect->GetGrowExtractionThreshold();
+			ImGui::InputFloat(u8"しきい値", &bloomThreshold, 0.1f);
+			bloomEffect->SetGrowExtractionThreshold(bloomThreshold);	
 			if (ImGui::CollapsingHeader("vignetteEffect"))
 			{
 				float area = vignetteEffect->constantBuffer->data.area;
@@ -450,20 +453,20 @@ void SceneGame::LightUpdate(float elapsed_time)
 
 		if (pFadeOut.Update(elapsed_time))
 		{
-			soundManager->Stop(static_cast<int>(SoundManager::SOUNDGAME::GAME_BGM));
+			SoundManager::getinctance().Stop(static_cast<int>(SoundManager::SOUNDGAME::GAME_BGM));
 			if (state == STATE::CLEAR) return SceneName::CLEAR;
 			else if (state == STATE::OVER) return SceneName::OVER;
 			else return SceneName::TITLE;
-
 		}
 		switch (state)
 		{
 		case STATE::GAME:
 			if (bossEnemy->attackStartFlag)
 			{
-				soundManager->Play(static_cast<int>(SoundManager::SOUNDGAME::GAME_BGM, true));
+				//BGMSTART
+				SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::GAME_BGM), true);
+				bossEnemy->attackStartFlag = false;
 			}
-
 			pHitAreaRender.Clear();
 			//soundBGM->SetPan(pan);
 			//soundBGM->SetVolume(volume);
@@ -796,13 +799,15 @@ void SceneGame::LightUpdate(float elapsed_time)
 		enemyHpMax->Render(devicecontext, 670, 870, bossEnemy->GetObj()->GetMaxHp() * 6.04f, 24, 0, 0, 640, 30, 0, 1, 0, 0, 1);
 		enemyHp->Render(devicecontext, DirectX::XMFLOAT2(673, 873), 20.f, DirectX::XMFLOAT2(0, 0), DirectX::XMFLOAT2(630, 18), 0, DirectX::XMFLOAT4(1, 0, 0, 1));
 		//SP
-		playerSpMax->Render(devicecontext, 180, 58, player->GetObj()->GetMaxHp() * 6.04f, 24, 0, 0, 500, 20, 0, 1, 1, 1, 1);
+		playerSpMax->Render(devicecontext, shader.get(),180, 58, player->GetObj()->GetMaxHp() * 6.04f, 24, 0, 0, 500, 20, 0, 1, 1, 1, 1);
 		playerSp->Render(devicecontext, DirectX::XMFLOAT2(183, 60), 20.f, DirectX::XMFLOAT2(0, 0), DirectX::XMFLOAT2(494, 14), 0, DirectX::XMFLOAT4(1, 1, 1, 1));	
 		pFadeOut.Render(devicecontext);
+
 		blendGame[0]->Deactivate(devicecontext);
 	}
 	SceneGame::~SceneGame()
 	{
+		SoundManager::getinctance().Destroy();
 		Camera::GetInstance().Destroy();
 		pLoadModel.Destory();
 		pParticleManager->Destroy();

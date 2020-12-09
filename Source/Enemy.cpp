@@ -382,7 +382,6 @@ void Enemy::UpdateFirstState(float elapsedTime)
 		}
 		break;
 	case ACTION::SECOND:
-		attackStartFlag = false;
 		if (!enemyObj->GetAnimContinue())
 		{
 			waiteTime += elapsedTime;

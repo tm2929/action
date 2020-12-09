@@ -13,6 +13,7 @@
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
 #endif
 #include "gamepad.h"
+#include "Texture.h"
 
 SceneTitle::SceneTitle(ID3D11Device* device, HWND hwnd)
 {
@@ -20,11 +21,19 @@ SceneTitle::SceneTitle(ID3D11Device* device, HWND hwnd)
 		{
 			std::lock_guard<std::mutex> lock(loading_mutex);
 #ifdef USE_IMGUI
-			titleTex = std::make_unique<Sprite>(device, L"Data/images/bg.png");
+			//titleTex = std::make_unique<Sprite>(device, L"Data/images/bg.png");
+			titleTex = std::make_unique<Sprite>(device, L"Data/images/Title01.png");
 #else
 			titleTex = std::make_unique<Sprite>(device, L"Data/images/Title01.png");
 #endif
+			samplerWrap = std::make_unique<Sampler>(device, D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP);
+			rasterizer = std::make_unique<RasterizerState>();
+			rasterizer->CreateRasterizerState(device);
 			colorChangeFlag = false;
+			dissolveShader = std::make_unique<ShaderEx>();
+			D3D11_TEXTURE2D_DESC tex2D;
+			 load_texture_from_file(device, L"Data/dissolve/Dissolve_01_02.png", srv.GetAddressOf(), &tex2D);
+			dissolveShader->Create(device, "Data/shaders/cso/sprite_vs.cso", "Data/shaders/cso/Dissolve_ps.cso");
 		}, device);
 	soundManager = std::make_unique<SoundManager>(hwnd);
 	soundManager->CreateSoundSourceTitle();
@@ -42,6 +51,7 @@ int SceneTitle::Update(float elapsed_time)
 
 	if (pFadeOut.Update(elapsed_time))
 	{
+
 		soundManager->Stop(static_cast<int>(SoundManager::SOUNDTITLE::TITLE_BGM));
 		return SceneName::GAME;
 	}
@@ -50,12 +60,24 @@ int SceneTitle::Update(float elapsed_time)
 		pFadeOut.MoveStart();
 		colorChangeFlag = true;
 	}
+	static DirectX::XMFLOAT2 tst = { 0,0 };
+	static DirectX::XMFLOAT4 dissolveColor = { 0,0,0,0 };
 	if (colorChangeFlag)
 	{
-		static float dispTimer, dispMaxTimer;
-		dispMaxTimer = 0.5f;
+		static float i = 0;
+		i += 1.0 * elapsed_time;
+		tst.x = i;
+		tst.y = i / 5;
+		if (i > 1.5f)
+		{
+			pFadeOut.MoveStart();
+		}
+		titleTex->SetDissolveColor(dissolveColor);
+		titleTex->SetDissolveThreshold(tst.x);
+		titleTex->SetEmissiveWith(tst.y);
 
 	}
+	
 #ifdef USE_IMGUI
 	ImGui::Begin("Title");
 
@@ -63,6 +85,11 @@ int SceneTitle::Update(float elapsed_time)
 	{
 		pFadeOut.MoveStart();
 	}
+	
+	ImGui::InputFloat("dissolveThreshold", &tst.x, 0.1f);
+	ImGui::InputFloat("emissiveWith", &tst.y, 0.1f);
+	ImGui::ColorEdit3("dissolveColor", (float*)&dissolveColor);
+
 
 	ImGui::End();
 #endif
@@ -83,12 +110,18 @@ void SceneTitle::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 	
 	blend->Activate(devicecontext);
 #ifdef USE_IMGUI
-	titleTex->Render(devicecontext, 0, 0, 1920, 1080, 0, 0, 1920, 1080, 0, 1, 1, 1, 1);
+	samplerWrap->Activate(devicecontext,0);
+	rasterizer->SetRasterizerState(RS_CULL_BACK, devicecontext);
+
+	//titleTex->DissolveRender(devicecontext, dissolveShader.get(), srv.Get(),0, 0, 1920, 1080, 0, 0, 1920, 1080, 0, 1, 1, 1, 1);
+	titleTex->DissolveRender(devicecontext, dissolveShader.get(), srv.Get(), 308, 300, 1050, 169, 0, 0, 1050, 169, 0, 1, 1, 1, 1);
 #else
-	titleTex->Render(devicecontext, 308, 300, 1050, 169, 0, 0, 1050, 169, 0, 1, 1, 1, 1);
+	titleTex->DissolveRender(devicecontext, dissolveShader.get(),srv.Get(), 308, 300, 1050, 169, 0, 0, 1050, 169, 0, 1, 1, 1, 1);
 #endif
+
 	pFadeOut.Render(devicecontext);
 
+	samplerWrap->Deactivate(devicecontext);
 	blend->Deactivate(devicecontext);
 
 }
