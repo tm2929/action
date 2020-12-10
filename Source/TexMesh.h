@@ -15,6 +15,7 @@
 
 class TexMesh
 {
+
 public:
 	TexMesh(ID3D11Device* device, const wchar_t* filename)
 	{
@@ -31,6 +32,7 @@ public:
 
 		cbColor = std::make_unique<ConstantBuffer<CBColor>>(device);
 		cbMatrix = std::make_unique<ConstantBuffer<CBMatrix>>(device);
+		fogBuffer = std::make_unique<ConstantBuffer<FogShaderConstants>>(device);
 	}
 	TexMesh(ID3D11Device* device, std::shared_ptr<Texture>& texture)
 	{
@@ -46,6 +48,7 @@ public:
 
 		cbColor = std::make_unique<ConstantBuffer<CBColor>>(device);
 		cbMatrix = std::make_unique<ConstantBuffer<CBMatrix>>(device);
+		fogBuffer = std::make_unique<ConstantBuffer<FogShaderConstants>>(device);
 	}
 	virtual ~TexMesh() {}
 
@@ -97,6 +100,30 @@ protected:
 	std::unique_ptr<Shader> shadow;
 	std::unique_ptr<Sampler> sampler;
 	std::shared_ptr<Texture> texture;
+
+private:
+	struct FogShaderConstants
+	{
+		float fogNear = 10;
+		float fogFar = 500;
+		float dummy0;
+		float dummy1;
+		DirectX::XMFLOAT4 fogColor = { 0.5f,0.5f,0.5f,1.0f };
+	};
+	std::unique_ptr<ConstantBuffer<FogShaderConstants>>fogBuffer;
+public:
+	void SetFogNear(float fogNear)
+	{
+		fogBuffer->data.fogNear = fogNear;
+	}
+	void SetFogFar(float fogFar)
+	{
+		fogBuffer->data.fogFar = fogFar;
+	}
+	void SetFogColor(DirectX::XMFLOAT4 fogColor)
+	{
+		fogBuffer->data.fogColor = fogColor;
+	}
 };
 
 class TexCube : public TexMesh

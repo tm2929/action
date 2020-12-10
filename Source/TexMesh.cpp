@@ -406,7 +406,7 @@ void TexMesh::Render(ID3D11DeviceContext* context, const DirectX::XMFLOAT4X4& vi
 
 	cbColor->data.materialColor = color;
 	cbColor->Activate(context, 0);
-
+	fogBuffer->Activate(context, 4);
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	UINT stride = sizeof(Vertex);
@@ -418,6 +418,7 @@ void TexMesh::Render(ID3D11DeviceContext* context, const DirectX::XMFLOAT4X4& vi
 
 	sampler->Deactivate(context);
 	cbColor->DeActivate(context);
+	fogBuffer->DeActivate(context);
 	shader->DeActivate(context);
 }
 

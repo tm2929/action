@@ -121,8 +121,8 @@ private:
 	std::unique_ptr<Player>player;
 	std::unique_ptr<Enemy>bossEnemy;
 	std::unique_ptr<Trajectory>trajectory; //‹OÕ
+	std::unique_ptr<Obj3D>floor;
 	std::unique_ptr<Obj3D> stage;
-
 	//std::unique_ptr<AttackLine> attackLine;
 	//ƒTƒ“ƒvƒ‰[
 	std::shared_ptr<Sampler>samplerWrap;

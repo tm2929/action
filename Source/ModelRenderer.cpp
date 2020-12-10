@@ -9,6 +9,9 @@
 
 ModelRenderer::ModelRenderer(ID3D11Device* device, bool depthFlag)
 {
+
+	fogBuffer = std::make_unique<ConstantBuffer<FogShaderConstants>>(device);
+
 	// 入力レイアウト
 	D3D11_INPUT_ELEMENT_DESC input_element_desc[] =
 	{
@@ -211,6 +214,7 @@ void ModelRenderer::Begin(ID3D11DeviceContext* context, const DirectX::XMFLOAT4X
 	};
 	context->VSSetConstantBuffers(0, ARRAYSIZE(constant_buffers), constant_buffers);
 	context->PSSetConstantBuffers(0, ARRAYSIZE(constant_buffers), constant_buffers);
+	fogBuffer->Activate(context, 4, false, true);
 	context->OMSetDepthStencilState(depthStencilState.Get(), 0);
 	// シーン用定数バッファ更新
 	CbScene cb_scene;
@@ -262,13 +266,12 @@ void ModelRenderer::Draw(ID3D11DeviceContext* context, Model* model, const Direc
 			context->DrawIndexed(subset.indexCount, subset.startIndex, 0);
 		}
 	}
-
 }
 
 // 描画終了
 void ModelRenderer::End(ID3D11DeviceContext* context)
 {
-
+	fogBuffer->DeActivate(context);
 }
 
 void ModelRenderer::ShadowBegin(ID3D11DeviceContext* context, const DirectX::XMFLOAT4X4& view_projection)

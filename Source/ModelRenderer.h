@@ -3,6 +3,7 @@
 #include <d3d11.h>
 #include "model.h"
 #include "vector.h"
+#include "constant_buffer.h"
 class ModelRenderer
 {
 public:
@@ -19,6 +20,28 @@ public:
 private:
 	static const int MaxBones = 128;
 
+	struct FogShaderConstants
+	{
+		float fogNear = 10;
+		float fogFar = 500;
+		float dummy0;
+		float dummy1;
+		DirectX::XMFLOAT4 fogColor = { 0.5f,0.5f,0.5f,1.0f };
+	};
+	std::unique_ptr<ConstantBuffer<FogShaderConstants>>fogBuffer;
+public:
+	void SetFogNear(float fogNear)
+	{
+		fogBuffer->data.fogNear = fogNear;
+	}
+	void SetFogFar(float fogFar)
+	{
+		fogBuffer->data.fogFar = fogFar;
+	}
+	void SetFogColor(DirectX::XMFLOAT4 fogColor)
+	{
+		fogBuffer->data.fogColor = fogColor;
+	}
 	struct CbScene
 	{
 		DirectX::XMFLOAT4X4	view_projection;

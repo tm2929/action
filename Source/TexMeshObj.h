@@ -53,6 +53,18 @@ public:
 	void SetTexture(ID3D11Device* device, const wchar_t* filename);
 	void SetGeometric(ID3D11Device* device, const ObjectType& type);
 	void SetExist(bool exist) { this->exist = exist; }
+	void SetFogNear(float fogNear)
+	{
+		obj->SetFogNear(fogNear);
+	}
+	void SetFogFar(float fogFar)
+	{
+		obj->SetFogFar(fogFar);
+	}
+	void SetFogColor(DirectX::XMFLOAT4 fogColor)
+	{
+		obj->SetFogColor(fogColor);
+	}
 	//void SetUseShadowFlg(bool flg) { useShadow = flg; }
 
 	const XMFLOAT3& GetScale() { return scale; }
