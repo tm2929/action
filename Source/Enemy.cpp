@@ -752,7 +752,7 @@ void Enemy::SetLongAttackState()
 		playerPos.y = enemyObj->GetPosition().y;
 
 		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::BRIBIRI, DirectX::XMFLOAT3(playerPos));
-		EffectObj::GetInstance().SetScale(EffectObj::TYPE::BRIBIRI, DirectX::XMFLOAT3(1, 0.3, 1));
+		EffectObj::GetInstance().SetScale(EffectObj::TYPE::BRIBIRI, DirectX::XMFLOAT3(1.f, 0.3f, 1.f));
 		EffectObj::GetInstance().SetColor(EffectObj::TYPE::BRIBIRI, DirectX::XMFLOAT4(0.4f, 1.f, 1.f, 1.f));
 		EffectObj::GetInstance().Play(EffectObj::TYPE::BRIBIRI);
 		animNo = static_cast<int>(ANIM::HANDUP1);

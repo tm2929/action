@@ -240,6 +240,7 @@ void SoundManager::CreateSoundSourceTitle()
 void SoundManager::Imgui()
 {
 	static float volume = 1.0f;
+#ifdef USE_IMGUI
 	if (ImGui::CollapsingHeader("Volume"))
 	{
 		ImGui::InputFloat("volume", &volume, 0.1f);
@@ -257,6 +258,7 @@ void SoundManager::Imgui()
 	if (ImGui::Button("ATTACK3"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE3), false);
 	if (ImGui::Button("ATTACK4"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE4), false);
 	if (ImGui::Button("SWING"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING), false);
+#endif
 }
 
 // WAVEÉfÅ[É^

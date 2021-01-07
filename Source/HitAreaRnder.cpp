@@ -11,14 +11,15 @@ void HitAreaRnder::SetHitCylinder(const DirectX::XMFLOAT3& min, const DirectX::X
 	d.color = color;
 	cylinderData.push_back(d);
 }
-void HitAreaRnder::SetHitCube(const DirectX::XMFLOAT3& min, const DirectX::XMFLOAT3& max)
+void HitAreaRnder::SetHitCube(const DirectX::XMFLOAT3& min, const DirectX::XMFLOAT3& max, const DirectX::XMFLOAT4& color)
 {
 	float xLeng = (max.x - min.x) * 0.5f;
 	float yLeng = (max.y - min.y) * 0.5f;
 	float zLeng = (max.z - min.z) * 0.5f;
 	Data d;
 	d.position = DirectX::XMFLOAT3(min.x + xLeng, min.y + yLeng, min.z + zLeng);
-	d.scale = DirectX::XMFLOAT3(xLeng, yLeng, zLeng);
+	d.scale = DirectX::XMFLOAT3(xLeng*2.f, yLeng * 2.f, zLeng * 2.f);
+	d.color = color;
 	cubeData.push_back(d);
 }
 void HitAreaRnder::SetHitSphere(const DirectX::XMFLOAT3& position, const float& area, const DirectX::XMFLOAT4 &color)
@@ -114,7 +115,7 @@ void HitAreaRnder::Render(ID3D11DeviceContext* context, const DirectX::XMFLOAT4&
 	}
 	for (auto& d : cubeData)
 	{
-		cubeObj->render(context, DirectX::XMFLOAT4(d.color), light, d.worldViewProjection, d.world);
+		cubeObj->render(context, DirectX::XMFLOAT4(d.color), light, d.worldViewProjection, d.world,true);
 	}
 }
 
@@ -122,4 +123,5 @@ void HitAreaRnder::Clear()
 {
 	cylinderData.clear();
 	sphereData.clear();
+	cubeData.clear();
 }

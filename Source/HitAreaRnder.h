@@ -22,7 +22,7 @@ public:
 		hitAreaRender = nullptr;
 	}
 	void SetHitCylinder(const DirectX::XMFLOAT3& min, const DirectX::XMFLOAT3& max, const float& area,const DirectX::XMFLOAT4& color);
-	void SetHitCube(const DirectX::XMFLOAT3& min, const DirectX::XMFLOAT3& max);
+	void SetHitCube(const DirectX::XMFLOAT3& min, const DirectX::XMFLOAT3& max, const DirectX::XMFLOAT4& color);
 	void SetHitSphere(const DirectX::XMFLOAT3& position, const float& area,const DirectX::XMFLOAT4& color);
 	void SetHitSphere2(const DirectX::XMFLOAT3& position, const float& area, const DirectX::XMFLOAT4& color);
 	void CalculateTransform(const DirectX::XMFLOAT4X4& view, const DirectX::XMFLOAT4X4& projection);

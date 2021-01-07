@@ -1,11 +1,11 @@
 #pragma once
 #include<DirectXMath.h>
 #include <d3d11.h>
-
+#include "HitObjData.h"
 class Camera
 {
 private:
-	
+
 	bool lerpFlag = false;
 	bool targetFlag = false;
 	bool freeFlag = false;
@@ -34,6 +34,12 @@ private:
 	float				rotateX = 0.0f;
 	float				rotateY = 0.0f;
 	float				distance = 0.0f;
+	//ìñÇΩÇËîªíË
+	AABB cube;
+	DirectX::XMFLOAT3 cubeMax = { 0,0,0 };
+	DirectX::XMFLOAT3 cubeMin = { 0,0,0 };
+	DirectX::XMFLOAT3 cubePos = { 0,0,0 };
+
 public:
 	DirectX::XMFLOAT3 angle;
 	//FoVïœìÆ
@@ -91,6 +97,9 @@ public:
 	void SetTargetFlag(const bool target) { targetFlag = target; }
 	void SetLerpFlag(const bool lerp) { lerpFlag = lerp; }
 	void SetFreeFlag(const bool free) { freeFlag = free; }
+	void SetCameraCubeMax(const DirectX::XMFLOAT3 max) { cubeMax = max; }
+	void SetCameraCubeMin(const DirectX::XMFLOAT3 min) { cubeMin = min; }
+	void SetCameraCubePos(const DirectX::XMFLOAT3 pos) { cubePos = pos; }
 	//ÉQÉbÉ^Å[
 	DirectX::XMFLOAT3& GetEye() { return eye; }
 	DirectX::XMFLOAT3& GetFocus() { return focus; }
@@ -104,6 +113,7 @@ public:
 	const bool& GetTargetFlag()const { return targetFlag; }
 	const bool& GetLerpFlag()const { return lerpFlag; }
 	const bool& GetFreeFlag()const { return freeFlag; }
+	const AABB& GetCube()const { return cube; }
 	static Camera& GetInstance()
 	{
 		return *camera;

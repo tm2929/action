@@ -95,9 +95,19 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 			//	pLoadModel.Load(device, "Data/mdl/tst/mdl/tst.mdl", "TSTPLAYER");
 				//pLoadModel.Load(device, "Data/fbx/ttt.mdl", "TSTPLAYER");
 			pLoadModel.Load(device, "Data/fbx/enemy/enemy04.fbx", "Enemy");
-			pLoadModel.Load(device, "Data/fbx/tstStage/tst.fbx", "Stage");
-			pLoadModel.Load(device, "Data/fbx/tstStage.fbx", "Floor");
-			//pLoadModel.Load(device, "Data/fbx/tstStage.fbx", "Stage");
+			pLoadModel.Load(device, "Data/fbx/tstStage/3/tstLeft1.fbx", "tstLeft1");
+			pLoadModel.Load(device, "Data/fbx/tstStage/3/tstLeft2.fbx", "tstLeft2");
+			pLoadModel.Load(device, "Data/fbx/tstStage/3/tstRight1.fbx", "tstRight1");
+			pLoadModel.Load(device, "Data/fbx/tstStage/3/tstRight2.fbx", "tstRight2");
+			pLoadModel.Load(device, "Data/fbx/tstStage/3/tstFront1.fbx", "tstFront1");
+			pLoadModel.Load(device, "Data/fbx/tstStage/3/tstFront2.fbx", "tstFront2");
+			pLoadModel.Load(device, "Data/fbx/tstStage/3/haka.fbx", "haka");
+			pLoadModel.Load(device, "Data/fbx/tstStage/3/back1.fbx", "tstBack1");
+			pLoadModel.Load(device, "Data/fbx/tstStage/3/back2.fbx", "tstBack2");
+			pLoadModel.Load(device, "Data/fbx/tstStage/3/iriguti.fbx", "iriguti");
+			pLoadModel.Load(device, "Data/fbx/tstStage/3/floor2.fbx", "Floor");
+			pLoadModel.Load(device, "Data/fbx/tstStage/3/stage02.fbx", "Stage");
+			pLoadModel.Load(device, "Data/fbx/tstStage/3/hitLeft.fbx", "hitLeft");
 			pLoadModel.Load(device, "Data/fbx/tst3.fbx", "tst");
 
 			tstbox = std::make_unique<Character>(pLoadModel.GetModelResource("tst"));
@@ -109,16 +119,14 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 			tstbox1->SetScale(DirectX::XMFLOAT3(5.0f, 5.0f, 5.0f));
 			tstbox1->SetAngle(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
 
+			tstStage = std::make_shared<Stage>();
+
 			player = std::make_unique<Player>(pLoadModel.GetModelResource("Player"), pLoadModel.GetModelResource("PlayerWeapon"));
 			bossEnemy = std::make_unique<Enemy>(pLoadModel.GetModelResource("Enemy"));
 			stage = std::make_unique<Character>(pLoadModel.GetModelResource("Stage"));
 			stage->SetPosition(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
-			stage->SetScale(DirectX::XMFLOAT3(5.0f, 5.0f, 5.0f));
+			stage->SetScale(DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
 			stage->SetAngle(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
-			floor = std::make_unique<Character>(pLoadModel.GetModelResource("Floor"));
-			floor->SetPosition(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
-			floor->SetScale(DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
-			floor->SetAngle(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
 
 			//ãOê’
 			trajectory = std::make_unique<Trajectory>(device, L"Data/images/SwordLine01.png");
@@ -240,6 +248,12 @@ void SceneGame::Imgui()
 	{
 		hitRenderFlag = !hitRenderFlag;
 	}
+	//Stage
+	if (ImGui::CollapsingHeader("stage"))
+	{
+		tstStage->Imgui();
+	}
+	//StageManager::getInstance().Imgui();
 	//sound
 	if (ImGui::CollapsingHeader("SOUND"))
 	{
@@ -309,6 +323,33 @@ void SceneGame::Imgui()
 	//ÉJÉÅÉâ
 	if (ImGui::CollapsingHeader("CAMERA"))
 	{
+		if (ImGui::CollapsingHeader(u8"cameraìñÇΩÇËîªíË"))
+		{
+			static DirectX::XMFLOAT3 cubeMax;
+			static DirectX::XMFLOAT3 cubeMin;
+			static DirectX::XMFLOAT3 cubePos;
+			if (ImGui::CollapsingHeader(u8"Max"))
+			{
+				ImGui::InputFloat("cubeMax_x", &cubeMax.x, 0.1f);
+				ImGui::InputFloat("cubeMax_y", &cubeMax.y, 0.1f);
+				ImGui::InputFloat("cubeMax_z", &cubeMax.z, 0.1f);
+				Camera::GetInstance().SetCameraCubeMax(cubeMax);
+			}
+			if (ImGui::CollapsingHeader(u8"Min"))
+			{
+				ImGui::InputFloat("cubeMin_x", &cubeMin.x, 0.1f);
+				ImGui::InputFloat("cubeMin_y", &cubeMin.y, 0.1f);
+				ImGui::InputFloat("cubeMin_z", &cubeMin.z, 0.1f);
+				Camera::GetInstance().SetCameraCubeMin(cubeMin);
+			}
+			if (ImGui::CollapsingHeader("Pos"))
+			{
+				ImGui::InputFloat("cubePos_x", &cubePos.x, 0.1f);
+				ImGui::InputFloat("cubePos_y", &cubePos.y, 0.1f);
+				ImGui::InputFloat("cubePos_z", &cubePos.z, 0.1f);
+				Camera::GetInstance().SetCameraCubePos(cubePos);
+			}
+		}
 		static float foo = 1.0f;
 		if (ImGui::Button(u8"ÉtÉäÅ[ÉJÉÅÉâêÿÇËë÷Ç¶"))
 		{
@@ -494,16 +535,14 @@ int SceneGame::Update(float elapsed_time)
 		//soundBGM->SetPan(pan);
 		//soundBGM->SetVolume(volume);
 		//tstcube->Update();
-		player->Update(elapsed_time);
-		Camera::GetInstance().SetTarget(DirectX::XMFLOAT3(player->GetObj()->GetPosition().x, player->GetObj()->GetHeadPosition().y, player->GetObj()->GetPosition().z));
+		tstStage->Update(elapsed_time);
 		trajectory->SetStartPosition(player->GetTrajectoryStartPosition());
 		trajectory->SetEndPosition(player->GetTrajectoryEndPosition());
 		trajectory->SwapPosition();
 		bossEnemy->Update(elapsed_time);
-		stage->CalculateTransform();
-		floor->CalculateTransform();
-		AttackLine::GetInctance().Update();
+		//stage->CalculateTransform();
 
+		AttackLine::GetInctance().Update();
 		if (firstFlag)
 		{
 			EffectObj::GetInstance().SetScale(EffectObj::TYPE::THUNDER, DirectX::XMFLOAT3(3, 3, 3));
@@ -579,12 +618,14 @@ int SceneGame::Update(float elapsed_time)
 			dispTimer = 0;
 		}
 #endif
+		player->Update(elapsed_time);
 		playerHp->Update(elapsed_time, player->GetObj()->GetMaxHp(), player->GetObj()->GetHp(), 6.f);
 		enemyHp->Update(elapsed_time, bossEnemy->GetObj()->GetMaxHp(), bossEnemy->GetObj()->GetHp(), 6.f);
 		playerSp->Update(elapsed_time, player->GetObj()->GetMaxSp(), player->GetObj()->GetSp(), 6.f);
 		CollisionManager::Judge(elapsed_time, *player->GetObj(), *bossEnemy->GetObj(), *stage);
+		CollisionManager::CameraStageJudge(*tstStage, *player->GetObj());
+		Camera::GetInstance().SetTarget(DirectX::XMFLOAT3(player->GetObj()->GetPosition().x, player->GetObj()->GetHeadPosition().y, player->GetObj()->GetPosition().z));
 		pParticleManager->Update(elapsed_time);
-		pHitAreaRender.CalculateTransform(Camera::GetInstance().GetView(), Camera::GetInstance().GetProjection());
 		//ÉJÉÅÉâïœçX
 		if (!Camera::GetInstance().GetFreeFlag())
 		{
@@ -649,7 +690,7 @@ int SceneGame::Update(float elapsed_time)
 		bossEnemy->Update(elapsed_time);
 		//nlength = { 85,40,85 };
 		Camera::GetInstance().SetCamera(length, Camera::TYPE::CLEAR);
-		Camera::GetInstance().Updata(elapsed_time);
+		//Camera::GetInstance().Updata(elapsed_time);
 		ParticleManager::getInstance()->Update(elapsed_time);
 		EffectObj::GetInstance().Update();
 		break;
@@ -659,7 +700,7 @@ int SceneGame::Update(float elapsed_time)
 		//length = { 55,-8,55 };
 		Camera::GetInstance().SetTargetAngle(player->GetObj()->GetAngle());
 		Camera::GetInstance().SetCamera(length, Camera::TYPE::OVER);
-		Camera::GetInstance().Updata(elapsed_time);
+		//Camera::GetInstance().Updata(elapsed_time);
 		EffectObj::GetInstance().Update();
 		break;
 	}
@@ -667,6 +708,7 @@ int SceneGame::Update(float elapsed_time)
 	Camera::GetInstance().Updata(elapsed_time);
 	Camera::GetInstance().CalculateTransforms();
 	Camera::GetInstance().flag = true;
+	pHitAreaRender.CalculateTransform(Camera::GetInstance().GetView(), Camera::GetInstance().GetProjection());
 	return 0;
 }
 void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
@@ -746,11 +788,35 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 		modelRenderer->Begin(devicecontext, view_projection, VECTOR4(0, -1, -1, 1));
 		modelRenderer->Draw(devicecontext, player->GetModel(), VECTOR4(0.5, 0.5, 0.5, 1));
 		modelRenderer->Draw(devicecontext, player->GetWeaponModel());
-		rasterizer->SetRasterizerState(RS_CULL_NONE, devicecontext);
-		modelRenderer->Draw(devicecontext, stage->GetModel(), VECTOR4(1, 1, 1, tstColor.w));
-		modelRenderer->Draw(devicecontext, floor->GetModel(), VECTOR4(1, 1, 1, tstColor.w));
+
+		//stage
+		if (tstStage->GetLeftObj1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetLeftObj1()->GetModel());
+		if (tstStage->GetLeftObj2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetLeftObj2()->GetModel());
+		if (tstStage->GetRightObj1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetRightObj1()->GetModel());
+		if (tstStage->GetRightObj2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetRightObj2()->GetModel());
+		if (tstStage->GetFrontObj1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetFrontObj1()->GetModel());
+		if (tstStage->GetFrontObj2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetFrontObj2()->GetModel());
+		if (tstStage->GetBackObj1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetBackObj1()->GetModel());
+		if (tstStage->GetBackObj2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetBackObj2()->GetModel());
+		if (tstStage->GetHaka1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetHaka1()->GetModel());
+		if (tstStage->GetHaka2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetHaka2()->GetModel());
+		modelRenderer->Draw(devicecontext, tstStage->GetHitLeft()->GetModel());
+
+		modelRenderer->Draw(devicecontext, tstStage->GetFloor()->GetModel());
+		//modelRenderer->Draw(devicecontext, stage->GetModel(), VECTOR4(1, 1, 1, tstColor.w));
+
+	/*	for (auto& d : StageManager::getInstance().GetStageData())
+		{
+			modelRenderer->Draw(devicecontext, d.obj->GetModel());
+		}*/
 		modelRenderer->Draw(devicecontext, bossEnemy->GetModel(), VECTOR4(1.0f, 1.0f, 1.0f, 0.5f));
 		modelRenderer->End(devicecontext);
+
+		if (hitRenderFlag)
+		{
+			pHitAreaRender.Render(devicecontext, DirectX::XMFLOAT4(0, -1, -1, 1));
+		}
+
 		blendGame[0]->Deactivate(devicecontext);
 		if (AttackLine::GetInctance().GetExistFlag())
 		{
@@ -813,10 +879,7 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 	}
 	/*vignetteEffect->Render(devicecontext, frameBuffer[0]->GetRenderTargetShaderResourceView().Get());*/
 
-	if (hitRenderFlag)
-	{
-		pHitAreaRender.Render(devicecontext, DirectX::XMFLOAT4(0, -1, -1, 0));
-	}
+
 	blendGame[0]->Activate(devicecontext);
 	//ÇgÇo
 	playerHpMax->Render(devicecontext, 180, 28, player->GetObj()->GetMaxHp() * 6.04f, 24, 0, 0, 640, 30, 0, 1, 1, 1, 1);

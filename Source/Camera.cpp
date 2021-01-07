@@ -1,6 +1,7 @@
 #include "camera.h"
 #include "gamepad.h"
 #include "KeyInput.h"
+#include "HitAreaRnder.h"
 Camera* Camera::camera = nullptr;
 DirectX::XMFLOAT2 Camera::viewPort;
 Camera::Camera(const DirectX::XMFLOAT3& eye, const DirectX::XMFLOAT3& focus, const DirectX::XMFLOAT3& up)
@@ -26,6 +27,11 @@ Camera::Camera(const DirectX::XMFLOAT3& eye, const DirectX::XMFLOAT3& focus, con
 	farZ = 10000.0f;//ï\éÜç≈âìñ Ç‹Ç≈ÇÃãóó£
 
 	FoV = waiteFoV;
+
+	cubePos = { 0,30,0 };
+	cubeMax = { 5,5,5 };
+	cubeMin = { 5,5,5 };
+
 }
 
 Camera::Camera() : eye(0, 0, -200.0f), focus(0, 0, 0), up(0, 1, 0), front(0, 0, 1), right(1, 0, 0), view(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), FoV(0), aspect(0), nearZ(0), farZ(0)
@@ -70,7 +76,6 @@ void Camera::CalculateTransforms()
 	right.y = view._12;
 	right.z = view._13;
 
-
 }
 
 void Camera::Updata(float elapsedTime)
@@ -98,6 +103,18 @@ void Camera::Updata(float elapsedTime)
 		break;
 	}
 	Vibrate(elapsedTime);
+
+	cubePos = eye;
+
+	cube.max.x = cubePos.x + cubeMax.x;
+	cube.max.y = cubePos.y + cubeMax.y;
+	cube.max.z = cubePos.z + cubeMax.z;
+
+	cube.min.x = cubePos.x - cubeMin.x;
+	cube.min.y = cubePos.y - cubeMin.y;
+	cube.min.z = cubePos.z - cubeMin.z;
+
+	pHitAreaRender.SetHitCube(cube.min, cube.max, DirectX::XMFLOAT4(1, 1, 1, 1));
 }
 
 void Camera::RelativePosCamera()
@@ -188,7 +205,7 @@ void Camera::TargetCamera(float elapsed_time)
 	DirectX::XMVECTOR length_v = DirectX::XMVectorScale(dir, -len.x);
 
 	DirectX::XMFLOAT3 leng;
-	
+
 	DirectX::XMStoreFloat3(&leng, length_v);
 
 	eye = DirectX::XMFLOAT3(targetPos.x + leng.x, targetPos.y + len.y, targetPos.z + leng.z);
@@ -335,9 +352,9 @@ void Camera::ClearCamera(float elapsedTime)
 	len = ll;
 	eye = DirectX::XMFLOAT3(targetPos.x + sinf(angle.y) * len.x, targetPos.y + angle.x + len.y, targetPos.z + cosf(angle.y) * len.z);
 	//eye = DirectX::XMFLOAT3(0,0,0);
-	
+
 	DirectX::XMVECTOR f = DirectX::XMLoadFloat3(&focus);
-	DirectX::XMVECTOR target = DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(enemyPos.x,enemyPos.y+10,enemyPos.z));
+	DirectX::XMVECTOR target = DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(enemyPos.x, enemyPos.y + 10, enemyPos.z));
 	f = DirectX::XMVectorLerp(f, target, 0.1f);
 	DirectX::XMFLOAT3 ff;
 	DirectX::XMStoreFloat3(&ff, f);

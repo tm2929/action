@@ -6,14 +6,13 @@ Obj3D::Obj3D(std::shared_ptr<ModelResource> resource)
 	model = std::make_shared<Model>(resource);
 }
 
-void Obj3D::CalculateTransform(bool flag)
+void Obj3D::CalculateTransform()
 {
 	DirectX::XMMATRIX W, s, r, t;
 	//スケール行列
 	s = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z);
 	//回転行列
-	if (flag) r = DirectX::XMMatrixRotationRollPitchYaw(angle.x, angle.y, angle.z);
-	else  r = DirectX::XMMatrixRotationQuaternion(DirectX::XMLoadFloat4(&orientation));
+	 r = DirectX::XMMatrixRotationRollPitchYaw(angle.x, angle.y, angle.z);
 	//移動行列
 	t = DirectX::XMMatrixTranslation(position.x, position.y, position.z);
 	//ワールド行列
@@ -58,59 +57,6 @@ int Obj3D::RayPick(const DirectX::XMFLOAT3& startPosition, const DirectX::XMFLOA
 	}
 
 	return ret;
-}
-
-void Obj3D::SetOrientations(const DirectX::XMFLOAT3& direction)
-{
-	DirectX::XMFLOAT3 front = direction;
-
-	DirectX::XMVECTOR fVec = DirectX::XMLoadFloat3(&front);
-	DirectX::XMVECTOR frontVecN = DirectX::XMVector3Normalize(fVec);
-
-	DirectX::XMFLOAT3 axis;
-	FLOAT angle;
-	DirectX::XMMATRIX mat;
-	DirectX::XMVECTOR o;
-	o = DirectX::XMLoadFloat4(&orientation);
-
-	mat = DirectX::XMMatrixRotationQuaternion(o);
-	DirectX::XMFLOAT4X4 m;
-	DirectX::XMStoreFloat4x4(&m, mat);
-
-
-	DirectX::XMFLOAT3 forward = DirectX::XMFLOAT3(m._31, m._32, m._33);
-	DirectX::XMVECTOR forwardVec = DirectX::XMLoadFloat3(&forward);
-
-	DirectX::XMFLOAT3 up = DirectX::XMFLOAT3(m._21, m._22, m._23);
-	DirectX::XMFLOAT3 right = DirectX::XMFLOAT3(m._11, m._12, m._13);
-
-	DirectX::XMVECTOR c = DirectX::XMVector3Cross(forwardVec, frontVecN);
-	DirectX::XMStoreFloat3(&axis, c);
-
-	DirectX::XMVECTOR d = DirectX::XMVector3Dot(forwardVec, frontVecN);
-	DirectX::XMStoreFloat(&angle, d);
-	//axis = Vec3Cross(forward, fVecN);
-//	angle = Vec3Dot(forward, front);
-
-	angle = acosf(angle);
-
-
-	//アングルが一定値よりも大きいとき
-	if (0.001f < angle)
-	{
-		//axis = Vec3Normalize(axis);
-		DirectX::XMVECTOR axisVec = DirectX::XMLoadFloat3(&axis);
-		DirectX::XMVECTOR axisVecN = DirectX::XMVector3Normalize(axisVec);
-		DirectX::XMVECTOR q;
-		q = DirectX::XMQuaternionRotationAxis(axisVecN, angle);
-
-		DirectX::XMVECTOR q2;
-		q2 = DirectX::XMQuaternionMultiply(o, q);
-		o = DirectX::XMQuaternionSlerp(o, q2, 0.1f);
-
-	}
-	DirectX::XMStoreFloat4(&orientation, o);
-
 }
 
 const DirectX::XMFLOAT3& Obj3D::GetBonePos(const char* bornName)

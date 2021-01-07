@@ -4,7 +4,15 @@
 
 bool Collision::isHitAABB(const AABB& obj1, const AABB& obj2)
 {
-	return false;
+
+	if (obj1.max.x <= obj2.min.x)	return false;
+	if (obj1.min.x >= obj2.max.x)	return false;
+	if (obj1.max.y <= obj2.min.y)	return false;
+	if (obj1.min.y >= obj2.max.y)	return false;
+	if (obj1.max.z <= obj2.min.z)		return false;
+	if (obj1.min.z >= obj2.max.z)		return false;
+
+	return true;
 }
 
 bool Collision::isHitCylinder(const Cylinder& obj1, const Cylinder& obj2)
@@ -65,7 +73,7 @@ bool Collision::isHitCylinderSphere(const Cylinder& cylinder, const Sphere& sphe
 	return true;
 }
 
-bool Collision::HitBoxCheak(const DirectX::XMFLOAT2& min1, const DirectX::XMFLOAT2& max1, const DirectX::XMFLOAT2& min2, const DirectX::XMFLOAT2& max2)
+bool Collision::isHitBox(const DirectX::XMFLOAT2& min1, const DirectX::XMFLOAT2& max1, const DirectX::XMFLOAT2& min2, const DirectX::XMFLOAT2& max2)
 {
 	float right1 = max1.x;	float right2 = max2.x;
 	float left1 = min1.x;	float left2 = min2.x;

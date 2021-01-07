@@ -160,6 +160,27 @@ void GeometricPrimitive::createbuffers(ID3D11Device* device, vertex* vertex_, in
 		);
 		_ASSERT_EXPR(SUCCEEDED(hr), HRTrace(hr));
 	}
+	// 深度ステンシルステート
+	{
+		D3D11_DEPTH_STENCIL_DESC desc;
+		//::memset(&desc, 0, sizeof(desc));
+		desc.DepthEnable = true;//深度値をみるかみないか
+		desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		desc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+		desc.StencilEnable = false;
+		desc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+		desc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+		desc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		desc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+		desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+		desc.BackFace.StencilFailOp= D3D11_STENCIL_OP_KEEP;
+		desc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+		desc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		desc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+		HRESULT hr = device->CreateDepthStencilState(&desc, &depthStencilState);
+		_ASSERT_EXPR(SUCCEEDED(hr), HRTrace(hr));
+	}
 
 }
 
@@ -168,7 +189,8 @@ void GeometricPrimitive::render(ID3D11DeviceContext* immediate_context,
 	const DirectX::XMFLOAT4& color,
 	const DirectX::XMFLOAT4& light_direction,
 	const DirectX::XMFLOAT4X4& world_view_projection,
-	const DirectX::XMFLOAT4X4& world) const
+	const DirectX::XMFLOAT4X4& world,
+	const bool topologyFlag) const
 {
 	//定数バッファの内容を更新
 	{
@@ -185,13 +207,16 @@ void GeometricPrimitive::render(ID3D11DeviceContext* immediate_context,
 	UINT offset = 0;
 	immediate_context->IASetVertexBuffers(0, 1, &vertex_buffer, &stride, &offset);
 	immediate_context->IASetIndexBuffer(index_buffer, DXGI_FORMAT_R32_UINT, 0);//DXGI_FORMAT_R32_UINT=unsigned intの32ビット
-	immediate_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);	// ポリゴンの描き方の指定
+	if (!topologyFlag)immediate_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+	else immediate_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);	// ポリゴンの描き方の指定
 	immediate_context->IASetInputLayout(input_layout);
 
 	immediate_context->RSSetState(rasterizer_state);
+	immediate_context->OMSetDepthStencilState(depthStencilState, 0);
 
 	immediate_context->VSSetShader(vertex_shader, nullptr, 0);
 	immediate_context->PSSetShader(pixel_shader, nullptr, 0);
+	
 
 	// ↑で設定したリソースを利用してポリゴンを描画する。
 	//immediate_context->Draw(4, 0);

@@ -18,6 +18,7 @@ private:
 	ID3D11Buffer* constant_buffer = nullptr;
 	ID3D11Buffer* null_constant_buffer = nullptr;
 
+	ID3D11DepthStencilState* 	depthStencilState=nullptr;
 	ID3D11RasterizerState* rasterizer_state = nullptr;
 	int num;
 public:
@@ -69,7 +70,11 @@ public:
 			constant_buffer->Release();
 			constant_buffer = nullptr;
 		}
-
+		if (depthStencilState != nullptr)
+		{
+			depthStencilState->Release();
+			depthStencilState = nullptr;
+		}
 		if (rasterizer_state != nullptr)
 		{
 			rasterizer_state->Release();
@@ -80,7 +85,8 @@ public:
 		const DirectX::XMFLOAT4& color,
 		const DirectX::XMFLOAT4& light_direction,
 		const DirectX::XMFLOAT4X4& world_view_projection,
-		const DirectX::XMFLOAT4X4& world) const;
+		const DirectX::XMFLOAT4X4& world,
+		const bool topologyFlag=false) const;
 };
 
 class GeometricCube :public GeometricPrimitive

@@ -1,5 +1,6 @@
 #pragma once
 #include<DirectXMath.h>
+#include "Math.h"
 struct Cylinder
 {
 	DirectX::XMFLOAT3 min;
@@ -18,6 +19,11 @@ struct AABB
 {
 	DirectX::XMFLOAT3 min;
 	DirectX::XMFLOAT3 max;
+	void HitAreaTransform(DirectX::XMFLOAT3 pos, DirectX::XMFLOAT3 min, DirectX::XMFLOAT3 max)
+	{
+		this->max = Vec3Add(pos, max);
+		this->min = Vec3Subtract(pos, min);
+	}
 };
 struct Sphere
 {

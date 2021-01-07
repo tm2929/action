@@ -25,7 +25,7 @@ Player::Player(std::shared_ptr<ModelResource> resource, std::shared_ptr<ModelRes
 	speedData.Init();
 	energyData.Init();
 	//‰ŠúÝ’è
-	playerObj->SetPosition(DirectX::XMFLOAT3(3.0f, 0.f, 100.0f));
+	playerObj->SetPosition(DirectX::XMFLOAT3(3.0f, 0.f, 210.0f));
 	playerObj->SetScale(DirectX::XMFLOAT3(0.09f, 0.09f, 0.09f));
 	playerObj->SetAngle(DirectX::XMFLOAT3(0.0f, DirectX::XMConvertToRadians(180.0f), 0.0f));
 
@@ -87,6 +87,7 @@ Player::Player(std::shared_ptr<ModelResource> resource, std::shared_ptr<ModelRes
 	LoadAnimSpeed();
 	len = 0;
 	vec = { 0,0,0 };
+
 }
 void Player::Update(float elapsedTime)
 {
@@ -224,6 +225,15 @@ void Player::Imgui()
 {
 #ifdef USE_IMGUI
 	ImGui::Begin("player");
+	//ˆÊ’u
+	if (ImGui::CollapsingHeader(u8"ˆÊ’u"))
+	{
+		static DirectX::XMFLOAT3 pos;
+		ImGui::InputFloat("pos.x", &pos.x, 10.f);
+		ImGui::InputFloat("pos.y", &pos.y, 10.f);
+		ImGui::InputFloat("pos.z", &pos.z, 10.f);
+		playerObj->SetPosition(pos);
+	}
 	if (ImGui::CollapsingHeader("HP,SP"))
 	{
 		ImGui::Text("hp%.f", playerObj->GetHp());
