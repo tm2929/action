@@ -10,23 +10,30 @@
 #include <imgui_internal.h>
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
 #endif
-Stage::Stage()
+Stage::Stage(ID3D11Device* device)
 {
-	pos = { 245,-100,-125 };
+	pos = { 245,-100,-280 };
 	//pos = { 0,0,0 };
 	max = { 60,400,500 };
 	//max = { 30,10,30};
 	//min = { 30,10,30};
-
+	pLoadModel.Load(device, "Data/fbx/tstStage/3/tstLeft1.fbx", "tstLeft1");
+	pLoadModel.Load(device, "Data/fbx/tstStage/3/tstLeft2.fbx", "tstLeft2");
+	pLoadModel.Load(device, "Data/fbx/tstStage/3/tstRight1.fbx", "tstRight1");
+	pLoadModel.Load(device, "Data/fbx/tstStage/3/tstRight2.fbx", "tstRight2");
+	pLoadModel.Load(device, "Data/fbx/tstStage/3/tstFront1.fbx", "tstFront1");
+	pLoadModel.Load(device, "Data/fbx/tstStage/3/tstFront2.fbx", "tstFront2");
+	pLoadModel.Load(device, "Data/fbx/tstStage/3/haka.fbx", "haka");
+	pLoadModel.Load(device, "Data/fbx/tstStage/3/back1.fbx", "tstBack1");
+	pLoadModel.Load(device, "Data/fbx/tstStage/3/back2.fbx", "tstBack2");
+	pLoadModel.Load(device, "Data/fbx/tstStage/3/iriguti.fbx", "iriguti");
+	pLoadModel.Load(device, "Data/fbx/tstStage/3/floor2.fbx", "Floor");
+	pLoadModel.Load(device, "Data/fbx/tstStage/3/stage02.fbx", "Stage");
+	pLoadModel.Load(device, "Data/fbx/tstStage/3/hitLeft.fbx", "hitLeft");
 	tstLeft1 = std::make_shared<Character>(pLoadModel.GetModelResource("tstLeft1"));
 	tstLeft1->SetPosition(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
 	tstLeft1->SetScale(DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
 	tstLeft1->SetAngle(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
-	
-	hitLeft = std::make_shared<Character>(pLoadModel.GetModelResource("hitLeft"));
-	hitLeft->SetPosition(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
-	hitLeft->SetScale(DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
-	hitLeft->SetAngle(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
 
 	tstLeft2 = std::make_shared<Character>(pLoadModel.GetModelResource("tstLeft2"));
 	tstLeft2->SetPosition(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
@@ -85,8 +92,6 @@ Stage::Stage()
 
 void Stage::Update(float elapsedTime)
 {
-
-
 	tstLeft1->CalculateTransform();
 	tstLeft2->CalculateTransform();
 	tstRight1->CalculateTransform();
@@ -97,22 +102,19 @@ void Stage::Update(float elapsedTime)
 	haka1->CalculateTransform();
 	haka2->CalculateTransform();
 	tstBack2->CalculateTransform();
-
-	hitLeft->CalculateTransform();
-
+	//hitLeft->CalculateTransform();
 	floor->CalculateTransform();
-
-	left1Cube.HitAreaTransform({ 257,0,0 }, { 0,0,0 }, { 60,60,255 });
+	left1Cube.HitAreaTransform({ 261,0,0 }, { 0,0,0 }, { 100,60,255 });
 	//left1Cube.HitAreaTransform({ pos}, { 0,0,0 }, { max });
-	left2Cube.HitAreaTransform({ 257,0,-255 }, { 0,0,0 }, { 60,60,255 });
-	right1Cube.HitAreaTransform({ -322,0,0 }, { 0,0,0 }, { 60,60,255 });
-	right2Cube.HitAreaTransform({ -322,0,-255 }, { 0,0,0 }, { 60,60,255 });
-	front1Cube.HitAreaTransform({ 67,0,-280 }, { 0,0,0 }, { 190,60,50 });
-	front2Cube.HitAreaTransform({ -262,0,-280 }, { 0,0,0 }, { 181,60,50 });
-	haka1Cube.HitAreaTransform({ -81,0,-286 }, { 0,0,0 }, { 148,60,50, });
-	back1Cube.HitAreaTransform({ 67,0,229 }, { 0,0,0 }, { 190,60,50 });
-	back2Cube.HitAreaTransform({ -259,0,228 }, { 0,0,0 }, { 184,60,50 });
-	haka2Cube.HitAreaTransform({ -75,0,231 }, { 0,0,0 }, {142,60,50});
+	left2Cube.HitAreaTransform({ 261,0,-255 }, { 0,0,0 }, { 100,60,255 });
+	right1Cube.HitAreaTransform({ -361,0,0 }, { 0,0,0 }, { 100,60,255 });
+	right2Cube.HitAreaTransform({ -361,0,-255 }, { 0,0,0 }, { 100,60,255 });
+	front1Cube.HitAreaTransform({ 67,0,-336 }, { 0,0,0 }, { 200,60,100 });
+	front2Cube.HitAreaTransform({ -262,0,-336 }, { 0,0,0 }, { 181,60,100 });
+	haka1Cube.HitAreaTransform({ -81,0,-336 }, { 0,0,0 }, { 148,60,100, });
+	back1Cube.HitAreaTransform({ 67,0,229 }, { 0,0,0 }, { 190,60,100 });
+	back2Cube.HitAreaTransform({ -259,0,228 }, { 0,0,0 }, { 184,60,100 });
+	haka2Cube.HitAreaTransform({ -75,0,231 }, { 0,0,0 }, { 142,60,100 });
 
 	pHitAreaRender.SetHitCube(left1Cube.min, left1Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
 	pHitAreaRender.SetHitCube(left2Cube.min, left2Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));

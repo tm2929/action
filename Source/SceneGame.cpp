@@ -95,19 +95,6 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 			//	pLoadModel.Load(device, "Data/mdl/tst/mdl/tst.mdl", "TSTPLAYER");
 				//pLoadModel.Load(device, "Data/fbx/ttt.mdl", "TSTPLAYER");
 			pLoadModel.Load(device, "Data/fbx/enemy/enemy04.fbx", "Enemy");
-			pLoadModel.Load(device, "Data/fbx/tstStage/3/tstLeft1.fbx", "tstLeft1");
-			pLoadModel.Load(device, "Data/fbx/tstStage/3/tstLeft2.fbx", "tstLeft2");
-			pLoadModel.Load(device, "Data/fbx/tstStage/3/tstRight1.fbx", "tstRight1");
-			pLoadModel.Load(device, "Data/fbx/tstStage/3/tstRight2.fbx", "tstRight2");
-			pLoadModel.Load(device, "Data/fbx/tstStage/3/tstFront1.fbx", "tstFront1");
-			pLoadModel.Load(device, "Data/fbx/tstStage/3/tstFront2.fbx", "tstFront2");
-			pLoadModel.Load(device, "Data/fbx/tstStage/3/haka.fbx", "haka");
-			pLoadModel.Load(device, "Data/fbx/tstStage/3/back1.fbx", "tstBack1");
-			pLoadModel.Load(device, "Data/fbx/tstStage/3/back2.fbx", "tstBack2");
-			pLoadModel.Load(device, "Data/fbx/tstStage/3/iriguti.fbx", "iriguti");
-			pLoadModel.Load(device, "Data/fbx/tstStage/3/floor2.fbx", "Floor");
-			pLoadModel.Load(device, "Data/fbx/tstStage/3/stage02.fbx", "Stage");
-			pLoadModel.Load(device, "Data/fbx/tstStage/3/hitLeft.fbx", "hitLeft");
 			pLoadModel.Load(device, "Data/fbx/tst3.fbx", "tst");
 
 			tstbox = std::make_unique<Character>(pLoadModel.GetModelResource("tst"));
@@ -119,15 +106,11 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 			tstbox1->SetScale(DirectX::XMFLOAT3(5.0f, 5.0f, 5.0f));
 			tstbox1->SetAngle(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
 
-			tstStage = std::make_shared<Stage>();
+			tstStage = std::make_shared<Stage>(device);
 
 			player = std::make_unique<Player>(pLoadModel.GetModelResource("Player"), pLoadModel.GetModelResource("PlayerWeapon"));
 			bossEnemy = std::make_unique<Enemy>(pLoadModel.GetModelResource("Enemy"));
-			stage = std::make_unique<Character>(pLoadModel.GetModelResource("Stage"));
-			stage->SetPosition(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
-			stage->SetScale(DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
-			stage->SetAngle(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
-
+		
 			//ãOê’
 			trajectory = std::make_unique<Trajectory>(device, L"Data/images/SwordLine01.png");
 			//trajectory = std::make_unique<Trajectory>(device,L"Data/Effect/Texture/actionlines1.png");
@@ -770,7 +753,6 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 	shadowmap->Clear(devicecontext);
 	shadowmap->Activate(devicecontext);
 	modelRenderer->ShadowBegin(devicecontext, lightViewProjection);
-	//modelRenderer->ShadowDraw(devicecontext, *stage->GetModel());
 	modelRenderer->ShadowDraw(devicecontext, *player->GetModel());
 	modelRenderer->ShadowDraw(devicecontext, *bossEnemy->GetModel());
 	shadowmap->Deactivate(devicecontext);
@@ -800,15 +782,9 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 		if (tstStage->GetBackObj2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetBackObj2()->GetModel());
 		if (tstStage->GetHaka1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetHaka1()->GetModel());
 		if (tstStage->GetHaka2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetHaka2()->GetModel());
-		modelRenderer->Draw(devicecontext, tstStage->GetHitLeft()->GetModel());
-
+		
 		modelRenderer->Draw(devicecontext, tstStage->GetFloor()->GetModel());
-		//modelRenderer->Draw(devicecontext, stage->GetModel(), VECTOR4(1, 1, 1, tstColor.w));
 
-	/*	for (auto& d : StageManager::getInstance().GetStageData())
-		{
-			modelRenderer->Draw(devicecontext, d.obj->GetModel());
-		}*/
 		modelRenderer->Draw(devicecontext, bossEnemy->GetModel(), VECTOR4(1.0f, 1.0f, 1.0f, 0.5f));
 		modelRenderer->End(devicecontext);
 

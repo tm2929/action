@@ -6,13 +6,12 @@
 class Stage
 {
 public:
-	Stage();
+	Stage(ID3D11Device* device);
 	void Update(float elapsedTime);
 	void Imgui();
 
 	//ÉQÉbÉ^Å[
-
-	std::shared_ptr<Character> GetHitLeft() { return hitLeft; }
+	//std::shared_ptr<Character> GetHitLeft() { return hitLeft; }
 	std::shared_ptr<Character> GetLeftObj1() { return tstLeft1; }
 	std::shared_ptr<Character> GetLeftObj2() { return tstLeft2; }
 	std::shared_ptr<Character> GetRightObj1() { return tstRight1; }
@@ -43,7 +42,7 @@ private:
 
 	std::shared_ptr<Character> tstLeft1;
 	std::shared_ptr<Character> tstLeft2;
-	std::shared_ptr<Character> hitLeft;
+	//std::shared_ptr<Character> hitLeft;
 	std::shared_ptr<Character> tstRight1;
 	std::shared_ptr<Character> tstRight2;
 	std::shared_ptr<Character> tstFront1;
@@ -68,44 +67,3 @@ private:
 	AABB back2Cube;
 	AABB haka2Cube;
 };
-
-
-//#define ASSETSCOUNT  20
-//class StageData
-//{
-//public:
-//	std::shared_ptr<Obj3D> obj;
-//	DirectX::XMFLOAT3 pos;
-//};
-//
-//class StageManager
-//{
-//public:
-//	void Create(ID3D11Device* device)
-//	{
-//		if (stageManager != nullptr)return;
-//		stageManager = new StageManager(device);
-//	}
-//	void SetObj(int num, DirectX::XMFLOAT3 pos);
-//	void Imgui();
-//	void Destroy()
-//	{
-//		delete stageManager;
-//		stageManager = nullptr;
-//		stageData.clear();
-//	}
-//	static StageManager& getInstance()
-//	{
-//		return *stageManager;
-//	}
-//	std::vector<StageData> GetStageData() { return stageData; }
-//private:
-//	int fileNum = 1;
-//	DirectX::XMFLOAT3 pos;
-//	std::vector<StageData>stageData;
-//	int plusX;
-//	int plusY;
-//	int plusZ;
-//	static StageManager* stageManager;
-//	StageManager(ID3D11Device* device);
-//};

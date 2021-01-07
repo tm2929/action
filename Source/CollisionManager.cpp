@@ -4,26 +4,7 @@
 #include "Fadeout.h"
 void CollisionManager::CameraStageJudge(Stage& stage, PlayerObj& player)
 {
-	////レイピック
-	std::shared_ptr<Character> hitleft = stage.GetHitLeft();
-	DirectX::XMFLOAT3 position = player.GetPosition();
-	DirectX::XMFLOAT3 front = player.GetFront();
-	float dx = front.x * 10.f;
-	float dz = front.z * 10.f;
-	DirectX::XMFLOAT3 rayStart = DirectX::XMFLOAT3(position.x + dx, position.y, position.z + dz);	// レイを飛ばす開始位置
-	DirectX::XMFLOAT3 rayEnd = DirectX::XMFLOAT3(position.x, position.y, position.z);	// レイを飛ばす終了位置
-	DirectX::XMFLOAT3  outPosition;
-	DirectX::XMFLOAT3  outNormal;
-
-	if (-1 != stage.GetHitLeft()->RayPick(rayStart, rayEnd, &outPosition, &outNormal))
-	{
-		position.x = outPosition.x;
-		position.z = outPosition.z;
-		player.SetPosition(position);
-	}
-	//int materialIndex = Collision::MoveCheck(*hitleft,rayStart, rayEnd, &outPosition);
-	player.SetPosition(position);
-
+	
 	//stage
 	AABB left1 = stage.GetLeft1Cube();
 	AABB left2 = stage.GetLeft2Cube();
@@ -37,69 +18,68 @@ void CollisionManager::CameraStageJudge(Stage& stage, PlayerObj& player)
 	AABB back2 = stage.GetBack2Cube();
 	//camera
 	AABB cameraCube = Camera::GetInstance().GetCube();
-	//AABB playerCube;
-	//playerCube.min = player.GetPosition();
-	//playerCube.max = player.GetPosition();
+	AABB playerCube;
+	playerCube.min = player.GetPosition();
+	playerCube.max = player.GetPosition();
 
-	//float yLeng = (player.GetHitArea().max.y - player.GetHitArea().min.y);
-	//playerCube.min.x -= player.GetHitArea().area;
-	//playerCube.min.y -= yLeng;
-	//playerCube.min.z -= player.GetHitArea().area;
+	float yLeng = (player.GetHitArea().max.y - player.GetHitArea().min.y);
+	playerCube.min.x -= player.GetHitArea().area;
+	playerCube.min.y -= yLeng;
+	playerCube.min.z -= player.GetHitArea().area;
 
-	//playerCube.max.x += player.GetHitArea().area;
-	//playerCube.max.y += yLeng;
-	//playerCube.max.z += player.GetHitArea().area;
-	//Cylinder playerArea = player.GetHitArea();
+	playerCube.max.x += player.GetHitArea().area;
+	playerCube.max.y += yLeng;
+	playerCube.max.z += player.GetHitArea().area;
+	Cylinder playerArea = player.GetHitArea();
 
-	////左
-	//if (Collision::isHitAABB(left1, playerCube))
-	//{
-	//	player.SetPosition(DirectX::XMFLOAT3(left1.min.x - playerArea.area, player.GetPosition().y, player.GetPosition().z));
-	//}
-	//else if (Collision::isHitAABB(left2, playerCube))
-	//{
-	//	player.SetPosition(DirectX::XMFLOAT3(left2.min.x - playerArea.area, player.GetPosition().y, player.GetPosition().z));
-	//}
-	//if (Collision::isHitAABB(left1, playerCube))
-	//{
-	//	player.SetPosition(DirectX::XMFLOAT3(left1.min.x - playerArea.area, player.GetPosition().y, player.GetPosition().z));
-	//}
-	////右
-	//if (Collision::isHitAABB(right1, playerCube))
-	//{
-	//	player.SetPosition(DirectX::XMFLOAT3(right1.max.x + playerArea.area, player.GetPosition().y, player.GetPosition().z));
-	//}
-	//else if (Collision::isHitAABB(right2, playerCube))
-	//{
-	//	player.SetPosition(DirectX::XMFLOAT3(right2.max.x + playerArea.area, player.GetPosition().y, player.GetPosition().z));
-	//}
-	////正面
-	//if (Collision::isHitAABB(front1, playerCube))
-	//{
-	//	player.SetPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, front1.max.z + playerArea.area));
-	//}
-	//else if (Collision::isHitAABB(front2, playerCube))
-	//{
-	//	player.SetPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, front2.max.z + playerArea.area));
-	//}
-	//else if (Collision::isHitAABB(haka1, playerCube))
-	//{
-	//	player.SetPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, haka1.max.z + playerArea.area));
-	//}
-	////後ろ
-	//if (Collision::isHitAABB(back1, playerCube))
-	//{
-	//	player.SetPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, back1.min.z - playerArea.area));
-	//}
-	//else 	if (Collision::isHitAABB(back2, playerCube))
-	//{
-	//	player.SetPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, back2.min.z - playerArea.area));
-	//}
-	//else 	if (Collision::isHitAABB(haka2, playerCube))
-	//{
-	//	player.SetPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, haka2.min.z - playerArea.area));
-
-	//}
+	//左
+	if (Collision::isHitAABB(left1, playerCube))
+	{
+		player.SetPosition(DirectX::XMFLOAT3(left1.min.x - playerArea.area, player.GetPosition().y, player.GetPosition().z));
+	}
+	else if (Collision::isHitAABB(left2, playerCube))
+	{
+		player.SetPosition(DirectX::XMFLOAT3(left2.min.x - playerArea.area, player.GetPosition().y, player.GetPosition().z));
+	}
+	if (Collision::isHitAABB(left1, playerCube))
+	{
+		player.SetPosition(DirectX::XMFLOAT3(left1.min.x - playerArea.area, player.GetPosition().y, player.GetPosition().z));
+	}
+	//右
+	if (Collision::isHitAABB(right1, playerCube))
+	{
+		player.SetPosition(DirectX::XMFLOAT3(right1.max.x + playerArea.area, player.GetPosition().y, player.GetPosition().z));
+	}
+	else if (Collision::isHitAABB(right2, playerCube))
+	{
+		player.SetPosition(DirectX::XMFLOAT3(right2.max.x + playerArea.area, player.GetPosition().y, player.GetPosition().z));
+	}
+	//正面
+	if (Collision::isHitAABB(front1, playerCube))
+	{
+		player.SetPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, front1.max.z + playerArea.area));
+	}
+	else if (Collision::isHitAABB(front2, playerCube))
+	{
+		player.SetPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, front2.max.z + playerArea.area));
+	}
+	else if (Collision::isHitAABB(haka1, playerCube))
+	{
+		player.SetPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, haka1.max.z + playerArea.area));
+	}
+	//後ろ
+	if (Collision::isHitAABB(back1, playerCube))
+	{
+		player.SetPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, back1.min.z - playerArea.area));
+	}
+	else 	if (Collision::isHitAABB(back2, playerCube))
+	{
+		player.SetPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, back2.min.z - playerArea.area));
+	}
+	else 	if (Collision::isHitAABB(haka2, playerCube))
+	{
+		player.SetPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, haka2.min.z - playerArea.area));
+	}
 	//カメラ
 	if (Collision::isHitAABB(left1, cameraCube))stage.GetLeftObj1()->SetExist(false);
 	else stage.GetLeftObj1()->SetExist(true);
