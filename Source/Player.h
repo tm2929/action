@@ -27,6 +27,9 @@ public:
 	//攻撃
 	void SetAttackState();
 	void UpdateAttackState(float elapsedTime);
+	//キック
+	void SetKickState();
+	void UpdateKickState(float elapsedTime);
 	//突進
 	void SetRushState();
 	void UpdateRushState(float elapsedTime);
@@ -95,8 +98,9 @@ private:
 	{
 		WAIT,		//待機
 		RUN,		//移動
-		ATTACK,		//攻撃
-		ACCEL,		//回避
+		ATTACK,	//攻撃
+		KICK,		//キック
+		ACCEL,	//回避
 		RUSH,		//突進攻撃
 		HIT,		//やられ
 		KNOCKBACK,//やられ(ふっとび)
@@ -142,6 +146,7 @@ private:
 		ACCEL,
 		DIE,
 		ATTACK4,
+		KICK,
 		END
 	};
 #endif 

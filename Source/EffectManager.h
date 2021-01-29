@@ -21,6 +21,7 @@ public:
 		CHARGE,			//ó≠Çﬂ
 		SLASHING,		//éaåÇìIÇ»
 		BRIBIRI,
+		CIRCLE,		//ñÇñ@êw
 		END
 	};
 	void Play(TYPE i);
@@ -50,10 +51,10 @@ public:
 	}
 	void SetColor(TYPE i, const DirectX::XMFLOAT4& c)
 	{
-		color[static_cast<int>(i)].R = c.x * 255.f;
-		color[static_cast<int>(i)].G = c.y * 255.f;
-		color[static_cast<int>(i)].B = c.z * 255.f;
-		color[static_cast<int>(i)].A = c.w * 255.f;
+		color[static_cast<int>(i)].R = static_cast<uint8_t>(c.x * 255.f);
+		color[static_cast<int>(i)].G = static_cast<uint8_t>(c.y * 255.f);
+		color[static_cast<int>(i)].B = static_cast<uint8_t>(c.z * 255.f);
+		color[static_cast<int>(i)].A = static_cast<uint8_t>(c.w * 255.f);
 	}
 	void SetAccel(TYPE i, const DirectX::XMFLOAT3& a) { accel[static_cast<int>(i)] = a; }
 

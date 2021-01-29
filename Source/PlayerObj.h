@@ -9,6 +9,8 @@ public:
 	void BoneNameInput();
 	void SaveBoneNum();
 	int LoadBoneNum();
+	void SaveKickBoneNum();
+	int LoadKickBoneNum();
 	void AttackBoneNameEditor();
 
 	void SetDamageFlag(const bool dam) { damageFlag = dam; }
@@ -52,13 +54,14 @@ public:
 	}
 	//“–‚½‚è”»’è
 	void  HitAttackTransform();
-	void  HitAttackTransformIMGUI();
+	void  HitAttackTransformIMGUI(bool kickFlag=false);
 	void  SetHitAttackAreaLeng(const float leng) { hitSphere.area = leng; }
 private:
 	Sphere hitSphere;//UŒ‚“–‚½‚è”»’è
 	int attackBoneNum = 0;
+	int kickBoneNum = 0;
 	std::vector<std::string>boneName;
-	DirectX::XMFLOAT3 pulsPos = { 110,3,110 };
+	DirectX::XMFLOAT3 pulsPos = { 110,100,110 };
 	DirectX::XMFLOAT3 headPosition;
 	//’ÊíˆÚ“®
 	float maxMoveSpeed = 0;//MaxSpeed

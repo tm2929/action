@@ -4,7 +4,6 @@
 void EnemyHitData::Init()
 {
 	damage = 5.f;
-
 	attackPower[0] = 0.f;//ˆêŒ‚–Ú
 	attackPower[1] = 5.f;//“ñŒ‚–Ú
 	attackPower[2] = 10.f;//‚RŒ‚–Ú
@@ -51,6 +50,17 @@ void EnemySpeedData::Init()
 	runSpeed = 60.f;
 }
 
+void EnemyShotData::Init()
+{
+	area = 13.f;
+	scale = DirectX::XMFLOAT3(0.3f, 0.3f, 0.3f);
+	y = -20;
+	time[0] = 0.3f;
+	time[1] = 2.0f;
+	moveTime = 1.5f;
+	speed = 250.f;
+	exist = true;
+}
 void EnemyThunderData::Init()
 {
 	for (int i = 0; i < THUNDERNUM; i++)

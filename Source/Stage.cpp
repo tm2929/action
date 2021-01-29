@@ -17,6 +17,7 @@ Stage::Stage(ID3D11Device* device)
 	max = { 60,400,500 };
 	//max = { 30,10,30};
 	//min = { 30,10,30};
+
 	pLoadModel.Load(device, "Data/fbx/tstStage/3/tstLeft1.fbx", "tstLeft1");
 	pLoadModel.Load(device, "Data/fbx/tstStage/3/tstLeft2.fbx", "tstLeft2");
 	pLoadModel.Load(device, "Data/fbx/tstStage/3/tstRight1.fbx", "tstRight1");
@@ -104,6 +105,7 @@ void Stage::Update(float elapsedTime)
 	tstBack2->CalculateTransform();
 	//hitLeft->CalculateTransform();
 	floor->CalculateTransform();
+
 	left1Cube.HitAreaTransform({ 261,0,0 }, { 0,0,0 }, { 100,60,255 });
 	//left1Cube.HitAreaTransform({ pos}, { 0,0,0 }, { max });
 	left2Cube.HitAreaTransform({ 261,0,-255 }, { 0,0,0 }, { 100,60,255 });

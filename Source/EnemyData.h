@@ -26,6 +26,19 @@ struct EnemyChoiceData
 
 	void Init();
 };
+struct EnemyShotData
+{
+	Sphere sphere;//当たり判定
+	
+	float area;
+	bool exist;
+	DirectX::XMFLOAT3 scale;
+	float y;
+	float moveTime;//enemy本体移動時間
+	float time[2]; //0角度変更時間 1ショット時間
+	float speed;
+	void Init();
+};
 struct EnemyThunderData
 {
 	DirectX::XMFLOAT3 pos[THUNDERNUM];

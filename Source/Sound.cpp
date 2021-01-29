@@ -210,14 +210,21 @@ void SoundManager::CreateSoundSourceGame()
 	SoundData sounddata[] =
 	{
 		{static_cast<int>(SOUNDGAME::GAME_BGM),"Data/sounds/GAMEBGM.wav"},
+		{static_cast<int>(SOUNDGAME::HIT),"Data/sounds/SE/hit.wav"},
+		{static_cast<int>(SOUNDGAME::DAMAGE),"Data/sounds/SE/damage.wav"},
+		{static_cast<int>(SOUNDGAME::THUNDER1),"Data/sounds/SE/THUNDER1.wav"},
+		{static_cast<int>(SOUNDGAME::THUNDER2),"Data/sounds/SE/THUNDER2.wav"},
 		{static_cast<int>(SOUNDGAME::ATTACK_VOICE1),"Data/sounds/attack/çUåÇÇ¢Ç‚ÅI.wav"},
 		{static_cast<int>(SOUNDGAME::ATTACK_VOICE2),"Data/sounds/attack/çUåÇÇÕÇüÇ¡ÅI.wav"},
 		{static_cast<int>(SOUNDGAME::ATTACK_VOICE3),"Data/sounds/attack/çUåÇÇƒÇ¢.wav"},
 		{static_cast<int>(SOUNDGAME::ATTACK_VOICE3),"Data/sounds/attack/çUåÇÇÒÇÕÇ†.wav"},
 		{static_cast<int>(SOUNDGAME::SWING),"Data/sounds/Swing.wav"},
+		{static_cast<int>(SOUNDGAME::SWING2),"Data/sounds/SE/ken.wav"},
+		{static_cast<int>(SOUNDGAME::SWING3),"Data/sounds/SE/swing3.wav"},
+
 	};
-	int size = sizeof(sounddata) / sizeof(SoundData);
-	for (int i = 0; i < size; i++)
+	//int size = sizeof(sounddata) / sizeof(SoundData);
+	for (int i = 0; i < static_cast<int>(SOUNDGAME::END); i++)
 	{
 		sound.emplace_back(std::make_unique<SoundSource>(directSound, sounddata[i].soundfile));
 	}
@@ -227,11 +234,12 @@ void SoundManager::CreateSoundSourceTitle()
 {
 	SoundData sounddata[] =
 	{
-		{static_cast<int>(SOUNDTITLE::TITLE_BGM),"Data/sounds/title.wav"},
+		{static_cast<int>(SOUNDTITLE::TITLE_BGM),"Data/sounds/TITLEBGM.wav"},
+		{static_cast<int>(SOUNDTITLE::ENTER),"Data/sounds/SE/Enter.wav"},
 
 	};
-	int size = sizeof(sounddata) / sizeof(SoundData);
-	for (int i = 0; i < size; i++)
+	//int size = sizeof(sounddata) / sizeof(SoundData);
+	for (int i = 0; i < static_cast<int>(SOUNDTITLE::END); i++)
 	{
 		sound.emplace_back(std::make_unique<SoundSource>(directSound, sounddata[i].soundfile));
 	}
@@ -245,19 +253,21 @@ void SoundManager::Imgui()
 	{
 		ImGui::InputFloat("volume", &volume, 0.1f);
 		if (ImGui::Button("GAMEBGM_V"))SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::GAME_BGM), volume);
-		if (ImGui::Button("ATTACK1_V"))SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE1), volume);
-		if (ImGui::Button("ATTACK2_V"))SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE2), volume);
+		if (ImGui::Button("THUNDER1_V"))SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::THUNDER1), volume);
+		if (ImGui::Button("THUNDER2_V"))SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::THUNDER2), volume);
 		if (ImGui::Button("ATTACK3_V"))SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE3), volume);
 		if (ImGui::Button("ATTACK4_V"))SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE4), volume);
 		if (ImGui::Button("SWING_V"))SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::SWING), volume);
 	}
 
 	if (ImGui::Button("GAMEBGM")) SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::GAME_BGM), false);
-	if (ImGui::Button("ATTACK1"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE1), false);
-	if (ImGui::Button("ATTACK2"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE2), false);
+	if (ImGui::Button("THUNDER1"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::THUNDER1), false);
+	if (ImGui::Button("THUNDER2"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::THUNDER2), false);
 	if (ImGui::Button("ATTACK3"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE3), false);
 	if (ImGui::Button("ATTACK4"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE4), false);
 	if (ImGui::Button("SWING"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING), false);
+	if (ImGui::Button("SWING2"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING2), false);
+	if (ImGui::Button("SWING3"))SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING3), false);
 #endif
 }
 

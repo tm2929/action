@@ -32,6 +32,7 @@ void Character::HitAreaTransform()
 {
 	DirectX::XMFLOAT3 position = GetPosition();
 	hitArea.min = position;
+	hitArea.min.y = position.y - 50;
 	hitArea.max = hitArea.min;
 	CalculateTransform();
 	for (auto& boon : GetModel()->GetNodes())

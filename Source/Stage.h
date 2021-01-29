@@ -22,8 +22,8 @@ public:
 	std::shared_ptr<Character> GetBackObj2() { return tstBack2; }
 	std::shared_ptr<Character> GetHaka1() { return haka1; }
 	std::shared_ptr<Character> GetHaka2() { return haka2; }
-	std::shared_ptr<Obj3D> GetFloor() { return floor; }
-
+	std::shared_ptr<Obj3D> GetFloor() { return floor; }	
+	
 	const AABB& GetLeft1Cube()const { return left1Cube; }
 	const AABB& GetLeft2Cube()const { return left2Cube; }
 	const AABB& GetRight1Cube()const { return right1Cube; }
@@ -52,7 +52,7 @@ private:
 	std::shared_ptr<Character> haka1;
 	std::shared_ptr<Character> haka2;
 	std::shared_ptr<Character> iriguti;
-
+	
 	std::shared_ptr<Obj3D>floor;
 
 	//“–‚½‚è”»’è

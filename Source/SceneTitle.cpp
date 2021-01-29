@@ -36,6 +36,7 @@ SceneTitle::SceneTitle(ID3D11Device* device, HWND hwnd)
 			dissolveShader->Create(device, "Data/shaders/cso/sprite_vs.cso", "Data/shaders/cso/Dissolve_ps.cso");
 		}, device);
 	soundManager = std::make_unique<SoundManager>(hwnd);
+	SoundManager::getinctance().Create(hwnd);
 	soundManager->CreateSoundSourceTitle();
 	soundManager->Play(static_cast<int>(SoundManager::SOUNDTITLE::TITLE_BGM), true);
 	blend = std::make_unique<BlendState>(device, BLEND_MODE::ALPHA);
@@ -58,6 +59,7 @@ int SceneTitle::Update(float elapsed_time)
 	if (KeyInput::KeyTrigger() & KEY_ENTER || input::ButtonRisingState(0, input::PadLabel::A))
 	{
 		pFadeOut.MoveStart();
+		soundManager->Play(static_cast<int>(SoundManager::SOUNDTITLE::ENTER), false);
 		colorChangeFlag = true;
 	}
 	static DirectX::XMFLOAT2 tst = { 0,0 };
@@ -65,7 +67,7 @@ int SceneTitle::Update(float elapsed_time)
 	if (colorChangeFlag)
 	{
 		static float i = 0;
-		i += 1.0 * elapsed_time;
+		i += 1.0f * elapsed_time;
 		tst.x = i;
 		tst.y = i / 5;
 		if (i > 1.5f)
@@ -80,6 +82,7 @@ int SceneTitle::Update(float elapsed_time)
 	
 #ifdef USE_IMGUI
 	ImGui::Begin("Title");
+	if (ImGui::Button("BGM")) soundManager->Play(static_cast<int>(SoundManager::SOUNDTITLE::ENTER), false);
 
 	if (ImGui::Button("game_open"))
 	{

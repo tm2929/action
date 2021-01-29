@@ -8,8 +8,10 @@
 class CollisionManager
 {
 public:
-	static void  CameraStageJudge(Stage& stage, PlayerObj& player);
-	static  void Judge(float elapsed_time, PlayerObj& player, EnemyObj& enemy, Obj3D& stage);
+	static void  StageJudge(Stage& stage, PlayerObj& player);
+	static  void Judge(float elapsed_time, PlayerObj& player, EnemyObj& enemy, Stage& stage);
 	void TargetJudge(float elapsed_time, PlayerObj& p, std::vector<EnemyObj>& e);
 
+	static void PlayerStageJudge(PlayerObj& player,Stage& stage);
+	static void CameraStageJudge(Stage& stage);
 };

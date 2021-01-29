@@ -117,26 +117,26 @@ void Player::Update(float elapsedTime)
 	animTime = playerObj->GetModel()->GetAnimationSeconds();
 	animSpeed = animSpeeds[animNo];
 
+	playerObj->HitAttackTransformIMGUI(false);
+	if (state == STATE::KICK) playerObj->HitAttackTransformIMGUI(true);
+
 	playerObj->CalculateTransform();
-	playerObj->HitAttackTransformIMGUI();
-	playerObj->HitAttackTransform();
-	//playerObj->HitAreaUpdate();
+	//playerObj->HitAttackTransform();
 	playerObj->HitAreaTransform();
 
 	weapon->SetPosition(playerObj->GetHitSphere().position);
-	Model::Node node = GetModel()->GetNodes()[47];
 	//軌跡
-	trajectoryEndPos.x = node.worldTransform._41;
-	trajectoryEndPos.y = node.worldTransform._42;
-	trajectoryEndPos.z = node.worldTransform._43;
+	{
+		Model::Node node;
+		node = GetModel()->GetNodes()[47];
+		trajectoryEndPos.x = node.worldTransform._41;
+		trajectoryEndPos.y = node.worldTransform._42;
+		trajectoryEndPos.z = node.worldTransform._43;
 
-	//trajectoryStartPos.x = trajectoryEndPos+
-
-	trajectoryStartPos.x = trajectoryEndPos.x + ((node.worldTransform._31) * 150);
-	trajectoryStartPos.y = trajectoryEndPos.y + ((node.worldTransform._32) * 150);
-	trajectoryStartPos.z = trajectoryEndPos.z + ((node.worldTransform._33) * 150);
-
-	//weapon->SetAngle(DirectX::XMFLOAT3(angle));
+		trajectoryStartPos.x = trajectoryEndPos.x + ((node.worldTransform._31) * 150);
+		trajectoryStartPos.y = trajectoryEndPos.y + ((node.worldTransform._32) * 150);
+		trajectoryStartPos.z = trajectoryEndPos.z + ((node.worldTransform._33) * 150);
+	}
 	weapon->Update(elapsedTime, playerObj);
 
 	playerObj->SetFront(DirectX::XMFLOAT3(sinf(angle.y), 0.f, cosf(angle.y)));
@@ -149,6 +149,10 @@ void Player::Update(float elapsedTime)
 		//ダッシュ
 	case STATE::RUN:
 		UpdateRunState(elapsedTime);
+		break;
+		//キック
+	case STATE::KICK:
+		UpdateKickState(elapsedTime);
 		break;
 		//攻撃
 	case STATE::ATTACK:
@@ -175,7 +179,7 @@ void Player::Update(float elapsedTime)
 	case STATE::TST:
 		break;
 	}
-	if (state != STATE::ATTACK && state != STATE::RUSH)
+	if (state != STATE::ATTACK && state != STATE::RUSH && state != STATE::KICK)
 	{
 		playerObj->SetAttackFlag(false);
 	}
@@ -228,11 +232,10 @@ void Player::Imgui()
 	//位置
 	if (ImGui::CollapsingHeader(u8"位置"))
 	{
-		static DirectX::XMFLOAT3 pos;
-		ImGui::InputFloat("pos.x", &pos.x, 10.f);
-		ImGui::InputFloat("pos.y", &pos.y, 10.f);
-		ImGui::InputFloat("pos.z", &pos.z, 10.f);
-		playerObj->SetPosition(pos);
+		ImGui::Text("pos.x%.f", playerObj->GetPosition().x);
+		ImGui::Text("pos.y%.f", playerObj->GetPosition().y);
+		ImGui::Text("pos.z%.f", playerObj->GetPosition().z);
+		;
 	}
 	if (ImGui::CollapsingHeader("HP,SP"))
 	{
@@ -341,9 +344,9 @@ void Player::UpdateWaitState(float elapsedTime)
 	{
 		SetRunState();
 	}
-	if (KeyInput::KeyTrigger() & KEY_V || input::ButtonRisingState(0, input::PadLabel::X))
+	if (KeyInput::KeyTrigger() & KEY_C || input::ButtonRisingState(0, input::PadLabel::Y))
 	{
-		SetRushState();
+		SetKickState();
 	}
 	if (KeyInput::KeyTrigger() & KEY_Z || input::ButtonRisingState(0, input::PadLabel::X))
 	{
@@ -389,7 +392,7 @@ void Player::UpdateRunState(float elapsedTime)
 	{
 		SetWaitState();
 	}
-	if (KeyInput::KeyState() & KEY_LSHIFT)
+	if (KeyInput::KeyState() & KEY_LSHIFT|| input::ButtonPressedState(0, input::PadLabel::LSHOULDER))
 	{
 		if (animNo == static_cast<int>(ANIM::RUN))
 		{
@@ -418,7 +421,10 @@ void Player::UpdateRunState(float elapsedTime)
 	{
 		SetRushState();
 	}
-
+	if (KeyInput::KeyTrigger() & KEY_C || input::ButtonRisingState(0, input::PadLabel::Y))
+	{
+		SetKickState();
+	}
 	if (KeyInput::KeyTrigger() & KEY_Z || input::ButtonRisingState(0, input::PadLabel::X))
 	{
 		if (len <= 20) SetAttackState();
@@ -673,6 +679,49 @@ void Player::UpdateAttackState(float elapsedTime)
 	playerObj->SetPower(power);
 }
 #else
+void Player::SetKickState()
+{
+	animNo = static_cast<int>(ANIM::KICK);
+	playerObj->SetAnim(animNo, false);
+	action = ACTION::FIRST;
+	state = STATE::KICK;
+	count = 0;
+	//for (int i = 0; i < 120; i++)
+	//{
+	//	pParticleManager->Add_Board(std::make_shared<ParticleAccel>(), pParticleManager->Lp, playerObj->GetPosition());
+	//}
+	playerObj->SetAttackFlag(true);
+}
+void Player::UpdateKickState(float elapsedTime)
+{
+	count += elapsedTime;
+	if (count < 0.4)
+		animSpeeds[animNo] = 2.0f;
+	else
+		animSpeeds[animNo] = 1.6f;
+	
+	switch (action)
+	{
+	case Player::ACTION::FIRST:
+		if (!playerObj->GetAnimContinue())
+		{
+			//playerObj->GetModel()->SetBlendTime(30.0f);
+			animNo = static_cast<int>(ANIM::WAIT1);
+			playerObj->SetAnim(animNo, false);
+			action = ACTION::FIRSTEND;
+			playerObj->SetAttackFlag(false);
+		}
+		break;
+	case Player::ACTION::FIRSTEND:
+		if (!playerObj->GetModel()->GetBlendFlag())
+		{
+			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
+			SetWaitState();
+		}
+		break;
+	}
+
+}
 void Player::SetAttackState()
 {
 	if (prevState == STATE::RUSH)
@@ -760,6 +809,12 @@ void Player::UpdateAttackState(float elapsedTime)
 			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
 			SetAccelState();
 		}
+		if (KeyInput::KeyTrigger() & KEY_C || input::ButtonRisingState(0, input::PadLabel::Y))
+		{
+			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
+			SetKickState();
+			return;
+		}
 		if (playerObj->GetModel()->GetBlendFlag() && (KeyInput::KeyTrigger() & KEY_Z || input::ButtonRisingState(0, input::PadLabel::X)))
 		{
 			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
@@ -814,6 +869,12 @@ void Player::UpdateAttackState(float elapsedTime)
 			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
 			SetAccelState();
 		}
+		if (KeyInput::KeyTrigger() & KEY_C || input::ButtonRisingState(0, input::PadLabel::Y))
+		{
+			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
+			SetKickState();
+			return;
+		}
 		if (count > hitData.attackTime && (KeyInput::KeyTrigger() & KEY_Z || input::ButtonRisingState(0, input::PadLabel::X)))
 		{
 			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
@@ -852,6 +913,12 @@ void Player::UpdateAttackState(float elapsedTime)
 		{
 			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
 			SetAccelState();
+		}
+		if (KeyInput::KeyTrigger() & KEY_C || input::ButtonRisingState(0, input::PadLabel::Y))
+		{
+			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
+			SetKickState();
+			return;
 		}
 		if (!playerObj->GetModel()->GetBlendFlag())
 		{

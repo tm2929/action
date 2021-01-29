@@ -15,6 +15,7 @@ public:
 	Model* GetModel() { return enemyObj->GetModel(); }
 	std::shared_ptr<EnemyObj> GetObj() { return enemyObj; }
 	EnemyThunderData GetThunderData() { return thunderData; }
+	std::shared_ptr<Character> GetSkull() { return skull; }
 	bool attackStartFlag = false;//戦闘開始フラグ
 private:
 	enum class STATE
@@ -29,6 +30,8 @@ private:
 		LONGATTACK, //遠攻撃
 		KNOCKBACK,  //ノックバック
 		TELEPORTATION,//瞬間移動
+		FALL,//obj落下
+		DOWN,
 		DEATH
 
 	}; STATE state;
@@ -103,6 +106,12 @@ private:
 	//戦闘開始時挙動
 	void SetFirstState();
 	void UpdateFirstState(float elapsedTime);
+	//落下
+	void SetFallState();
+	void UpdateFallState(float elapsedTime);
+	//down
+	void SetDownState();
+	void UpdateDownState(float elapsedTime);
 	//死亡
 	void SetDeathState();
 	void UpdateDeathState(float elapsedTime);
@@ -116,11 +125,14 @@ private:
 	{
 		RUSH,//突進
 		THUNDER,//雷
+		SHOT,//ショット
 	};
 	enum class ACTION
 	{
 		FIRST,
+		FIRSTEND,
 		SECOND,
+		SECONDEND,
 		THIRD,
 	};
 	ACTION actionState;
@@ -139,11 +151,14 @@ private:
 	DirectX::XMFLOAT3 playerPos = { 0,0,0 };
 	DirectX::XMFLOAT3 angle = { 0,0,0 };
 	std::shared_ptr<EnemyObj>enemyObj;
+	std::shared_ptr<Character>skull;
+
 	EnemyHitData	hitData;
 	EnemyChoiceData choiceData;
 	EnemyAttackData attackData;
 	EnemySpeedData  speedData;
 	EnemyThunderData thunderData;
+	EnemyShotData shotData;
 	int animNo = 0;
 	DirectX::XMFLOAT4 color[3];//当たり判定色
 	float waiteTime;

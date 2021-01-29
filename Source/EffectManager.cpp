@@ -26,6 +26,7 @@ void EffectObj::Init(ID3D11Device* device)
 	effect[static_cast<int>(TYPE::CHARGE)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/CHARGE.efk");
 	effect[static_cast<int>(TYPE::SLASHING)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/huriage.efk");
 	effect[static_cast<int>(TYPE::BRIBIRI)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/biribiri.efk");
+	effect[static_cast<int>(TYPE::CIRCLE)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/mahouzin.efk");
 	//e = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Pierre01/tst.efk");
 
 	for (int i = 0; i < num; i++)

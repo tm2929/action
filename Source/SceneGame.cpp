@@ -90,12 +90,14 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 			//モデルロード
 			pLoadModel.Create();
 			//	pLoadModel.Load(device, "Data/fbx/player04.fbx", "Player");
+			pLoadModel.Load(device, "Data/fbx/tstStage/3/mobile_skull_09_1.fbx", "Skull");
 			pLoadModel.Load(device, "Data/fbx/player1/player1.mdl", "Player");
 			pLoadModel.Load(device, "Data/fbx/player1/weapon2.fbx", "PlayerWeapon");
 			//	pLoadModel.Load(device, "Data/mdl/tst/mdl/tst.mdl", "TSTPLAYER");
 				//pLoadModel.Load(device, "Data/fbx/ttt.mdl", "TSTPLAYER");
 			pLoadModel.Load(device, "Data/fbx/enemy/enemy04.fbx", "Enemy");
 			pLoadModel.Load(device, "Data/fbx/tst3.fbx", "tst");
+
 
 			tstbox = std::make_unique<Character>(pLoadModel.GetModelResource("tst"));
 			tstbox->SetPosition(DirectX::XMFLOAT3(0.0f, 5.0f, 0.0f));
@@ -110,7 +112,7 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 
 			player = std::make_unique<Player>(pLoadModel.GetModelResource("Player"), pLoadModel.GetModelResource("PlayerWeapon"));
 			bossEnemy = std::make_unique<Enemy>(pLoadModel.GetModelResource("Enemy"));
-		
+
 			//軌跡
 			trajectory = std::make_unique<Trajectory>(device, L"Data/images/SwordLine01.png");
 			//trajectory = std::make_unique<Trajectory>(device,L"Data/Effect/Texture/actionlines1.png");
@@ -286,6 +288,16 @@ void SceneGame::Imgui()
 			EffectObj::GetInstance().SetAngle(EffectObj::TYPE::SLASHING, tstAngle);
 			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::SLASHING, tstPos);
 			EffectObj::GetInstance().SetStraightFlag(true);
+		}
+		if (ImGui::Button("CIRCLE"))
+		{
+			// エフェクトの再生
+
+			EffectObj::GetInstance().SetScale(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT3(30, 30, 30));
+			EffectObj::GetInstance().SetColor(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT4(1, 1, 1, 1));
+			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT3(0, 0.1f, 0));
+			EffectObj::GetInstance().Play(EffectObj::TYPE::CIRCLE);
+			//e.Play(EffectObj::TYPE::BLACK););
 		}
 		if (ImGui::Button("TST"))
 		{
@@ -524,7 +536,6 @@ int SceneGame::Update(float elapsed_time)
 		trajectory->SwapPosition();
 		bossEnemy->Update(elapsed_time);
 		//stage->CalculateTransform();
-
 		AttackLine::GetInctance().Update();
 		if (firstFlag)
 		{
@@ -605,8 +616,8 @@ int SceneGame::Update(float elapsed_time)
 		playerHp->Update(elapsed_time, player->GetObj()->GetMaxHp(), player->GetObj()->GetHp(), 6.f);
 		enemyHp->Update(elapsed_time, bossEnemy->GetObj()->GetMaxHp(), bossEnemy->GetObj()->GetHp(), 6.f);
 		playerSp->Update(elapsed_time, player->GetObj()->GetMaxSp(), player->GetObj()->GetSp(), 6.f);
-		CollisionManager::Judge(elapsed_time, *player->GetObj(), *bossEnemy->GetObj(), *stage);
-		CollisionManager::CameraStageJudge(*tstStage, *player->GetObj());
+			
+		CollisionManager::Judge(elapsed_time, *player->GetObj(), *bossEnemy->GetObj(), *tstStage);
 		Camera::GetInstance().SetTarget(DirectX::XMFLOAT3(player->GetObj()->GetPosition().x, player->GetObj()->GetHeadPosition().y, player->GetObj()->GetPosition().z));
 		pParticleManager->Update(elapsed_time);
 		//カメラ変更
@@ -686,14 +697,14 @@ int SceneGame::Update(float elapsed_time)
 		//Camera::GetInstance().Updata(elapsed_time);
 		EffectObj::GetInstance().Update();
 		break;
-	}
+		}
 
 	Camera::GetInstance().Updata(elapsed_time);
 	Camera::GetInstance().CalculateTransforms();
 	Camera::GetInstance().flag = true;
 	pHitAreaRender.CalculateTransform(Camera::GetInstance().GetView(), Camera::GetInstance().GetProjection());
 	return 0;
-}
+	}
 void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 {
 	if (IsNowLoading())
@@ -782,10 +793,10 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 		if (tstStage->GetBackObj2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetBackObj2()->GetModel());
 		if (tstStage->GetHaka1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetHaka1()->GetModel());
 		if (tstStage->GetHaka2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetHaka2()->GetModel());
-		
 		modelRenderer->Draw(devicecontext, tstStage->GetFloor()->GetModel());
+		modelRenderer->Draw(devicecontext, bossEnemy->GetModel(), VECTOR4(1.0f, 1.0f, 1.0f, 1.0f));
 
-		modelRenderer->Draw(devicecontext, bossEnemy->GetModel(), VECTOR4(1.0f, 1.0f, 1.0f, 0.5f));
+		if(bossEnemy->GetSkull()->GetExist())modelRenderer->Draw(devicecontext, bossEnemy->GetSkull()->GetModel(), VECTOR4(1.0f, 1.0f, 1.0f, 1.0f));
 		modelRenderer->End(devicecontext);
 
 		if (hitRenderFlag)
@@ -818,7 +829,7 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 			EfectModelRenderer->Draw(devicecontext, tstbox->GetModel(), tstColor);
 			EfectModelRenderer->Draw(devicecontext, tstbox1->GetModel(), tstColor1);
 			EfectModelRenderer->End(devicecontext);
-		}
+	}
 #else
 		EfectModelRenderer->Begin(devicecontext, view_projection, VECTOR4(0, -1, -1, 1));
 		EfectModelRenderer->Draw(devicecontext, tstbox->GetModel(), tstColor);
@@ -828,7 +839,7 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 		blendGame[1]->Deactivate(devicecontext);
 		samplerWrap->Deactivate(devicecontext);
 		lightBuffer->DeActivate(devicecontext);
-		}
+}
 
 	frameBuffer[0]->Deactivate(devicecontext);
 	rasterizer->SetRasterizerState(RS_CULL_BACK, devicecontext);
@@ -868,7 +879,7 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 	pFadeOut.Render(devicecontext);
 
 	blendGame[0]->Deactivate(devicecontext);
-	}
+}
 SceneGame::~SceneGame()
 {
 	SoundManager::getinctance().Destroy();

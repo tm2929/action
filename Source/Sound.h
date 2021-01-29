@@ -53,15 +53,24 @@ public:
 	enum class SOUNDGAME
 	{
 		GAME_BGM,//ƒQ[ƒ€BGM
+		HIT,
+		DAMAGE,
+		THUNDER1,//—‹ŠJn
+		THUNDER2,
 		ATTACK_VOICE1,//UŒ‚º
 		ATTACK_VOICE2,
 		ATTACK_VOICE3,
 		ATTACK_VOICE4,
-		SWING
+		SWING,
+		SWING2,
+		SWING3,
+		END
 	};
 	enum class SOUNDTITLE
 	{
 		TITLE_BGM,//ƒQ[ƒ€BGM
+		ENTER,//Œˆ’è‰¹
+		END
 	};
 	static void Create(HWND hWnd)
 	{
@@ -75,6 +84,7 @@ public:
 	static void Destroy()
 	{
 		if (soundManager == nullptr)return;
+		soundManager->sound.clear();
 		delete(soundManager);
 		soundManager = nullptr;
 	}

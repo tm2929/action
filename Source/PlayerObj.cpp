@@ -12,6 +12,7 @@ PlayerObj::PlayerObj(std::shared_ptr<ModelResource> resource)
 {
 
 	LoadBoneNum();
+	LoadKickBoneNum();
 }
 
 void PlayerObj::BoneNameInput()
@@ -29,7 +30,6 @@ void PlayerObj::SaveBoneNum()
 	fwrite(&attackBoneNum, sizeof(int), 1, fp);
 	fclose(fp);
 }
-
 int PlayerObj::LoadBoneNum()
 {
 	FILE* fp;
@@ -40,7 +40,23 @@ int PlayerObj::LoadBoneNum()
 	}
 	return attackBoneNum;
 }
-
+void  PlayerObj::SaveKickBoneNum()
+{
+	FILE* fp;
+	fopen_s(&fp, "Data/file/player_obj_boon_kick_num.bin", "wb");
+	fwrite(&kickBoneNum, sizeof(int), 1, fp);
+	fclose(fp);
+}
+int PlayerObj::LoadKickBoneNum()
+{
+	FILE* fp;
+	if (fopen_s(&fp, "Data/file/player_obj_boon_kick_num.bin", "rb") == 0)
+	{
+		fread(&kickBoneNum, sizeof(int), 1, fp);
+		fclose(fp);
+	}
+	return attackBoneNum;
+}
 void PlayerObj::AttackBoneNameEditor()
 {
 #ifdef USE_IMGUI
@@ -52,22 +68,29 @@ void PlayerObj::AttackBoneNameEditor()
 		if (ImGui::Button("set"))
 		{
 			attackBoneNum = n;
+			kickBoneNum = n;
 		}
 		ImGui::Text("boneNum%d", n);
 		if (ImGui::Button("save"))
 		{
 			SaveBoneNum();
 		}
+		if (ImGui::Button("kickSave"))
+		{
+			SaveKickBoneNum();
+		}
 		if (ImGui::Button("load"))
 		{
 			n = LoadBoneNum();
+		}
+		if (ImGui::Button("kickLoad"))
+		{
+			n = LoadKickBoneNum();
 		}
 		ImGui::InputFloat("pulsx", &pulsPos.x, 10.f);
 		ImGui::InputFloat("pulsy", &pulsPos.y, 1.f);
 		ImGui::InputFloat("pulsz", &pulsPos.z, 10.f);
 	}
-
-
 #endif
 }
 
@@ -99,11 +122,22 @@ void PlayerObj::HitAttackTransform()
 #endif
 }
 
-void PlayerObj::HitAttackTransformIMGUI()
+void PlayerObj::HitAttackTransformIMGUI(bool kickFlag )
 {
-	Model::Node attackNode = GetModel()->GetNodes()[attackBoneNum];
+	Model::Node node;
+	if (kickFlag)
+	{
+		 node = GetModel()->GetNodes()[kickBoneNum];
+		 pulsPos = { 0,0,0 };
+	}
+	else
+	{
+		 node = GetModel()->GetNodes()[attackBoneNum];
+		 pulsPos = { 110,100,110 };
+	}
 
-	hitSphere.position.x = attackNode.worldTransform._41 + ((attackNode.worldTransform._31) * pulsPos.x);
-	hitSphere.position.y = attackNode.worldTransform._42 + ((attackNode.worldTransform._32) * pulsPos.y);
-	hitSphere.position.z = attackNode.worldTransform._43 + ((attackNode.worldTransform._33) * pulsPos.z);
+
+	hitSphere.position.x = node.worldTransform._41 + ((node.worldTransform._31) * pulsPos.x);
+	hitSphere.position.y = node.worldTransform._42 + ((node.worldTransform._32) * pulsPos.y);
+	hitSphere.position.z = node.worldTransform._43 + ((node.worldTransform._33) * pulsPos.z);
 }

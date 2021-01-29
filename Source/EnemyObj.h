@@ -13,12 +13,16 @@ public:
 	void  HitAttackTransform();
 	//セッター
 	void  SetHitAttackAreaLeng(const float leng) { hitSphere.area = leng; }
+	void  SetShotSphere(const Sphere Sphere) { shotSphere = Sphere; }
 	void  SetThunderCylinder(const Cylinder cylinder) { thunderCylinder = cylinder; }
 	void  SetDirection(const DirectX::XMFLOAT3 a) { direction = a; }
 	void SetDamageFlag(const bool dam) { damageFlag = dam; }
-	void SetRAttackFlag(const bool r) { rAttackFlag = r; }	
+	void SetRAttackFlag(const bool r) { rAttackFlag = r; }
 	void SetThunderAttackFlag(const bool t) { thunderAttackFlag = t; }
+	void SetShotAttackFlag(const bool s) { shotAttackFlag = s; }
+	void SetBounceFlag(const bool b) { bounceFlag = b; }
 	void SetHighAttackFlag(const bool h) { highAttackFlag = h; }
+	void SetDownFlag(const bool d) { downFlag = d; }
 	void SetRunSpeed(const float& runSpeed) { this->runSpeed = runSpeed; }
 	void SetKnockBackSpeed(const float& knockBackSpeed) { this->knockBackSpeed = knockBackSpeed; }
 	void SetKnockBackTime(const float& knockBackTime) { this->knockBackTime = knockBackTime; }
@@ -33,12 +37,16 @@ public:
 	}
 	//ゲッター
 	const Sphere& GetHitSphere()const { return hitSphere; }
+	const Sphere& GetShotSphere()const { return shotSphere; }
 	const Cylinder& GetThunderCylinder()const { return thunderCylinder; }
 	const DirectX::XMFLOAT3& GetDirection() { return  direction; }
 	const bool& GetDamageFlag()const { return damageFlag; }
 	const bool& GetRAttackFlag()const { return rAttackFlag; }
 	const bool& GetThunderAttackFlag()const { return thunderAttackFlag; }
+	const bool& GetShotAttackFlag()const { return shotAttackFlag; }
+	const bool& GetBounceFlag()const { return bounceFlag; }
 	const bool& GetHighAttackFlag()const { return highAttackFlag; }
+	const bool& GetDownFlag()const { return downFlag; }
 	float GetRunSpeed()const { return runSpeed; }
 	float GetKnockBackSpeed()const { return knockBackSpeed; }
 	float GetKnockBackTime()const { return knockBackTime; }
@@ -71,6 +79,12 @@ private:
 	bool rAttackFlag;
 	//雷攻撃かどうか
 	bool thunderAttackFlag;
+	//ショット攻撃かどうか
+	bool shotAttackFlag;
+	//跳ね返されたかどうか
+	bool bounceFlag;
 	//強攻撃かどうか
 	bool highAttackFlag;
+	//downかどうか
+	bool downFlag;
 };

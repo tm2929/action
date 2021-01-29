@@ -6,6 +6,8 @@
 #include "EffectManager.h"
 #include "AttackLine.h"
 #include "Math.h"
+#include "LoadModel.h"
+#include "Sound.h"
 #ifdef USE_IMGUI
 #include <imgui.h>
 #include <imgui_impl_dx11.h>
@@ -18,6 +20,7 @@ extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wparam
 Enemy::Enemy(std::shared_ptr<ModelResource> resource)
 {
 	enemyObj = std::make_unique<EnemyObj>(resource);
+
 	//初期設定
 	enemyObj->SetPosition(DirectX::XMFLOAT3(0.0f, 0.0f, -200.0f));
 	enemyObj->SetScale(DirectX::XMFLOAT3(.2f, 0.2f, 0.2f));
@@ -27,9 +30,7 @@ Enemy::Enemy(std::shared_ptr<ModelResource> resource)
 	pos = enemyObj->GetPosition();
 	//ノックバック
 	enemyObj->SetKnockBackFlag(false);
-	//ショット
-	shotAngle = 0.f;
-	shotTime = 0.f;
+
 
 	//HP
 	enemyObj->SetHp(100.f);
@@ -46,6 +47,10 @@ Enemy::Enemy(std::shared_ptr<ModelResource> resource)
 	attackData.Init();
 	speedData.Init();
 	thunderData.Init();
+	shotData.Init();
+
+	skull = std::make_shared<Character>(pLoadModel.GetModelResource("Skull"));
+	skull->SetScale(shotData.scale);
 
 	enemyObj->SetHitAreaLeng(hitData.hitLength);
 	enemyObj->CalculateTransform();
@@ -71,8 +76,10 @@ Enemy::Enemy(std::shared_ptr<ModelResource> resource)
 	//攻撃力
 	power = hitData.damage;
 	//LoadData();
+
 	enemyObj->SetRAttackFlag(false);
 	enemyObj->SetHighAttackFlag(false);
+	enemyObj->SetShotAttackFlag(false);
 
 	enemyObj->GetModel()->SetBlendTime(5.0f);
 
@@ -89,6 +96,9 @@ void Enemy::Update(float elapsedTime)
 	enemyObj->AnimUpdate(elapsedTime * animSpeed);
 	//アニメーション時間取得
 	animTime = enemyObj->GetModel()->GetAnimationSeconds();
+
+
+	skull->CalculateTransform();
 
 	if (enemyObj->GetRAttackFlag())
 	{
@@ -115,6 +125,19 @@ void Enemy::Update(float elapsedTime)
 	//カメラターゲット相手にエネミーをセット
 	Camera::GetInstance().SetEnemy(DirectX::XMFLOAT3(enemyObj->GetPosition().x, enemyObj->GetHeadPosition().y, enemyObj->GetPosition().z));
 
+	//shot当たり判定
+
+	//enemyObj->SetShotAttackFlag(shotData.exist);
+	if (enemyObj->GetShotAttackFlag())
+	{
+		skull->SetExist(true);
+		shotData.sphere.HitAreaTransform(skull->GetPosition(), shotData.area);
+		enemyObj->SetShotSphere(shotData.sphere);
+	}
+	else
+	{
+		skull->SetExist(false);
+	}
 	//thunder当たり判定
 	enemyObj->SetThunderAttackFlag(thunderData.exist);
 	if (thunderData.exist)
@@ -132,11 +155,13 @@ void Enemy::Update(float elapsedTime)
 	{
 		color[0] = color[1];
 	}
+	//shot当たり判定
+	if (enemyObj->GetShotAttackFlag())
+		pHitAreaRender.SetHitSphere(enemyObj->GetShotSphere().position, enemyObj->GetShotSphere().area, color[0]);
 	//雷当たり判定
 	pHitAreaRender.SetHitCylinder(enemyObj->GetThunderCylinder().min, enemyObj->GetThunderCylinder().max, enemyObj->GetThunderCylinder().area, color[0]);
 	//体当たり判定
 	pHitAreaRender.SetHitCylinder(enemyObj->GetHitArea().min, enemyObj->GetHitArea().max, enemyObj->GetHitArea().area, color[0]);
-	enemyObj->SetHitFlag(false);
 	//攻撃用当たり判定
 	pHitAreaRender.SetHitSphere(enemyObj->GetHitSphere().position, enemyObj->GetHitSphere().area, color[0]);
 	EffectObj::GetInstance().Plays(elapsedTime, EffectObj::TYPE::SLASHING, 6, DirectX::XMFLOAT3(sinf(enemyObj->GetAngle().y) * 4, 0, cosf(enemyObj->GetAngle().y) * 4), 0.1f);
@@ -172,6 +197,12 @@ void Enemy::Update(float elapsedTime)
 		/*case STATE::TELEPORTATION:
 			UpdateTeleportationState(elapsedTime);
 			break;*/
+	case STATE::FALL:
+		UpdateFallState(elapsedTime);
+		break;
+	case STATE::DOWN:
+		UpdateDownState(elapsedTime);
+		break;
 	case STATE::DEATH:
 		UpdateDeathState(elapsedTime);
 		break;
@@ -179,6 +210,13 @@ void Enemy::Update(float elapsedTime)
 	if (state != STATE::SHORTATTACK && state != STATE::LONGATTACK)
 	{
 		enemyObj->SetAttackFlag(false);
+	}
+	if (enemyObj->GetKnockBackFlag() && enemyObj->GetHitFlag())
+	{
+		if (enemyObj->GetKnockBackType() == 1)
+		{
+			SetDownState();
+		}
 	}
 	if (animStopFlag)
 	{
@@ -194,6 +232,8 @@ void Enemy::SaveData()
 	fopen_s(&fp, "Data/file/enmdata.bin", "wb");
 	fwrite(&choiceData, sizeof(EnemyChoiceData), 1, fp);
 	fclose(fp);
+
+
 }
 void Enemy::LoadData()
 {
@@ -213,10 +253,10 @@ void Enemy::Imgui()
 	ImGui::Text("dot%f", dot);
 	ImGui::Text("cross_y%f", cross.y);
 	ImGui::Text("angle_y%f", enemyObj->GetAngle().y);
+
 	//速度
 	if (ImGui::CollapsingHeader(u8"速度"))
 	{
-		ImGui::Text("knockBackTime%f", enemyObj->GetKnockBackTime());
 		ImGui::InputFloat("runSpeed", &speedData.runSpeed, 1.f);
 		ImGui::InputFloat("accelSpeed", &speedData.accelSpeed, 1.f);
 	}
@@ -224,12 +264,26 @@ void Enemy::Imgui()
 	if (ImGui::CollapsingHeader("TIME"))
 	{
 		ImGui::Text("time%2f", waiteTime);
+		static float knockBackTime;
+		ImGui::InputFloat("knockBackTime%f", &knockBackTime, 0.1f);
+		enemyObj->SetKnockBackTime(knockBackTime);
 		ImGui::SliderFloat("waiteTime", &choiceData.waiteTime, 0, 50);
 		ImGui::SliderFloat(u8"移動time", &choiceData.time, 0, 1);
 		ImGui::InputFloat("runTime", &choiceData.time, 0.1f);
 		ImGui::SliderFloat("angleTime", &attackData.angleTime, 0, 1);
 		ImGui::SliderFloat("rushTime", &attackData.rushTime, 0, 1);
 		ImGui::InputFloat("chargeTime", &attackData.chargeTime, 1.0f);
+	}
+	//SHOT
+	if (ImGui::CollapsingHeader("SHOT"))
+	{
+		ImGui::InputFloat("skull_scale", &shotData.scale.x, 0.01f);
+		//ImGui::InputFloat("scaleY", &skullData.scale.y, 0.01f);
+		shotData.scale.y = shotData.scale.x;
+		shotData.scale.z = shotData.scale.x;
+		skull->SetScale(shotData.scale);
+
+		ImGui::InputFloat("shotArea", &shotData.area, 0.1f);
 	}
 	//THUNDER
 	if (ImGui::CollapsingHeader("THUNDER"))
@@ -344,7 +398,7 @@ void Enemy::Imgui()
 				animStopFlag = true;
 			}
 		}
-		if (ImGui::SliderInt("animation", &animNo, 0, enemyObj->GetModel()->GetResource()->GetAnimations().size() - 1))
+		if (ImGui::SliderInt("animation", &animNo, 0, static_cast<int>(enemyObj->GetModel()->GetResource()->GetAnimations().size()) - 1))
 		{
 			enemyObj->SetAnim(animNo, true);
 		}
@@ -396,6 +450,49 @@ void Enemy::UpdateFirstState(float elapsedTime)
 	}
 }
 
+void Enemy::SetFallState()
+{
+	animNo = static_cast<int>(ANIM::HANDUP1);
+	enemyObj->SetAnim(animNo, false);
+	state = STATE::FALL;
+}
+
+void Enemy::UpdateFallState(float elapsedTime)
+{
+}
+
+void Enemy::SetDownState()
+{
+	if (enemyObj->GetAttackFlag())
+	{
+		enemyObj->SetAttackFlag(false);
+	}
+	animNo = static_cast<int>(ANIM::DAMAGE1);
+	enemyObj->SetAnim(animNo, false);
+	state = STATE::DOWN;
+	waiteTime = 0;
+	pos = enemyObj->GetPosition();
+	enemyObj->SetKnockBackFlag(false);
+	enemyObj->SetKnockBackTime(3.0f);
+}
+
+void Enemy::UpdateDownState(float elapsedTime)
+{
+	if (pos.y > 0)
+	{
+		pos.y-= elapsedTime * 30;
+		enemyObj->SetPosition(pos);
+	}
+	else
+	{
+		waiteTime += elapsedTime;
+		if (waiteTime > enemyObj->GetKnockBackTime())
+		{
+			SetChoiceState();
+		}
+	}
+}
+
 void Enemy::SetDeathState()
 {
 	animNo = static_cast<int>(ANIM::DAMAGE1);
@@ -431,7 +528,7 @@ void Enemy::UpdateChoiceState(float elapsedTime)
 	}
 	else
 	{
-#if 0
+#if 1
 		CalculateLength();
 		if (!attackMoveFlag)
 		{
@@ -441,7 +538,7 @@ void Enemy::UpdateChoiceState(float elapsedTime)
 				number = IntRandom(0, 2);//number
 				SetShortAttackState();
 			}
-			//中距離
+			//中遠距離
 			else /*if(len < choiceData.choiceLen[1])*/
 			{
 				number = IntRandom(0, 2);
@@ -451,11 +548,10 @@ void Enemy::UpdateChoiceState(float elapsedTime)
 				}
 				else
 				{
-					number = 0;
+					number = IntRandom(0, 2);
 					SetLongAttackState();
 				}
 			}
-
 		}
 		else if (beforeNumber == SHORTATTACK::UATTACK)
 		{
@@ -481,14 +577,15 @@ void Enemy::UpdateChoiceState(float elapsedTime)
 				number = /*SHORTATTACK::SATTACK;*/IntRandom(0, 2);//number
 				SetShortAttackState();
 				//SetSideStepState();
-	}
-}
+			}
+		}
 		beforeNumber = number;
 #else
-		number = LONGATTACK::THUNDER;
-		SetLongAttackState();
+		/*number = LONGATTACK::SHOT;
+		SetLongAttackState();*/
 	}
 #endif
+	}
 }
 //待機
 void Enemy::SetWaitState()
@@ -684,7 +781,7 @@ void Enemy::SetShortAttackState()
 	{
 		animNo = static_cast<int>(ANIM::SATTACK);
 		enemyObj->SetAnim(animNo, false);
-		enemyObj->SetAccelSpeed(speedData.runSpeed);
+		enemyObj->SetAccelSpeed(100.f);
 		attackData.angleTime = 0.6f;
 		attackData.chargeTime = 0.4f;
 
@@ -751,6 +848,7 @@ void Enemy::SetLongAttackState()
 		playerPos = Camera::GetInstance().GetTargetPos();//雷出現位置
 		playerPos.y = enemyObj->GetPosition().y;
 
+		SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::THUNDER1), false);
 		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::BRIBIRI, DirectX::XMFLOAT3(playerPos));
 		EffectObj::GetInstance().SetScale(EffectObj::TYPE::BRIBIRI, DirectX::XMFLOAT3(1.f, 0.3f, 1.f));
 		EffectObj::GetInstance().SetColor(EffectObj::TYPE::BRIBIRI, DirectX::XMFLOAT4(0.4f, 1.f, 1.f, 1.f));
@@ -759,11 +857,27 @@ void Enemy::SetLongAttackState()
 		enemyObj->SetAnim(animNo, false);
 		attackData.chargeTime = 0.7f;
 	}
+	if (number == LONGATTACK::SHOT)
+	{
+		enemyObj->SetBounceFlag(false);
+		enemyObj->SetShotAttackFlag(true);
+		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT3(pos.x + enemyObj->GetFront().x * 20.f, 0.1f, pos.z + enemyObj->GetFront().z * 20.f));
+		EffectObj::GetInstance().SetAngle(EffectObj::TYPE::CIRCLE, angle);
+		EffectObj::GetInstance().SetScale(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT3(30.f, 30.f, 30.f));
+		EffectObj::GetInstance().SetColor(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT4(1.f, 1.f, 1.f, 1.f));
+		EffectObj::GetInstance().Play(EffectObj::TYPE::CIRCLE);
+		animNo = static_cast<int>(ANIM::SHOT1);
+		enemyObj->SetAnim(animNo, false);
+		skull->SetAngle(DirectX::XMFLOAT3(angle));
+		shotData.y = -20;
+		skull->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x + enemyObj->GetFront().x * 20.f, shotData.y, enemyObj->GetPosition().z + enemyObj->GetFront().z * 20.f));
+	}
 	state = STATE::LONGATTACK;
 	waiteTime = 0;
 	actionState = ACTION::FIRST;
 	enemyObj->SetDamageFlag(false);
 	enemyObj->SetHighAttackFlag(false);
+	pos = enemyObj->GetPosition();
 }
 
 void Enemy::UpdateLongAttackState(float elapsedTime)
@@ -777,6 +891,10 @@ void Enemy::UpdateLongAttackState(float elapsedTime)
 	if (number == LONGATTACK::THUNDER)
 	{
 		ThunderAttack(elapsedTime);
+	}
+	if (number == LONGATTACK::SHOT)
+	{
+		ShotAttack(elapsedTime);
 	}
 }
 void Enemy::SetTeleportationState()
@@ -868,6 +986,7 @@ void Enemy::SAttack(float elapsedTime)//２連撃
 		{
 			actionState = ACTION::SECOND;
 			enemyObj->SetAttackFlag(true);
+			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING3), false);
 		}
 		break;
 	case ACTION::SECOND:
@@ -969,6 +1088,7 @@ void Enemy::UAttack(float elapsedTime)//上振り攻撃
 			actionState = ACTION::SECOND;
 			waiteTime = 0;
 			EffectObj::GetInstance().SetStraightFlag(true);
+			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING3), false);
 		}
 		//attakLine
 		AttackLine::GetInctance().SetScale(DirectX::XMFLOAT3(16.f, 0.1f, 60.f));
@@ -1084,6 +1204,7 @@ void Enemy::RushAttack(float elapsedTime)//突進
 				enemyObj->SetAnim(animNo, false);
 				attackData.rushFlag[1] = true;
 				EffectObj::GetInstance().Stop(EffectObj::TYPE::TST);
+				SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING3), false);
 			}
 		}
 		if (attackData.rushFlag[1])
@@ -1118,6 +1239,8 @@ void Enemy::ThunderAttack(float elapsedTime)
 		{
 			waiteTime = 0;
 			actionState = ACTION::SECOND;
+			SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::THUNDER2), 10.f);
+			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::THUNDER2), false);
 			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::THUNDER, DirectX::XMFLOAT3(playerPos));
 			EffectObj::GetInstance().SetScale(EffectObj::TYPE::THUNDER, DirectX::XMFLOAT3(3, 10, 3));
 			EffectObj::GetInstance().SetColor(EffectObj::TYPE::THUNDER, DirectX::XMFLOAT4(0.4f, 1.f, 1.f, 1.f));
@@ -1153,8 +1276,114 @@ void Enemy::ThunderAttack(float elapsedTime)
 }
 void Enemy::ShotAttack(float elapsedTime)
 {
+	if (enemyObj->GetDamageFlag())
+	{
+		if (enemyObj->GetPosition().y > 0)
+		{
+			pos.y -= elapsedTime * 30;
+			enemyObj->SetPosition(pos);
+		}
+		else
+		{
+			SetWaitState();
+		}
+	}
 	CalculateLength();
 	CalculateDotCross();
+	DirectX::XMFLOAT3 toPlayerAngle;
+	DirectX::XMStoreFloat3(&toPlayerAngle, vec);
+	static DirectX::XMFLOAT3 skulPos = skull->GetPosition();
+	static DirectX::XMFLOAT3 skulAngle = skull->GetAngle();
+	if (enemyObj->GetBounceFlag())
+	{
+
+		DirectX::XMVECTOR skulV = DirectX::XMLoadFloat3(&skulPos);
+
+		DirectX::XMVECTOR enemyV = DirectX::XMLoadFloat3(&pos);
+		DirectX::XMVECTOR v = DirectX::XMVectorSubtract(enemyV, skulV);
+		v = DirectX::XMVector3Normalize(v);//単位ベクトル化
+
+		skulAngle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
+
+		DirectX::XMFLOAT3 vF;
+		DirectX::XMStoreFloat3(&vF, v);
+		vF = Vec3Multiply(vF, 300.f * elapsedTime);
+		skulPos = Vec3Add(skulPos, vF);
+
+		skull->SetAngle(DirectX::XMFLOAT3(skulAngle.x, -skulAngle.y, skulAngle.z));
+		skull->SetPosition(skulPos);
+	}
+	else
+	{
+		switch (actionState)
+		{
+		case ACTION::FIRST:
+				pos.y += elapsedTime * 30;
+				if (pos.y > 30)
+				{
+					actionState = ACTION::FIRSTEND;
+				}
+				enemyObj->SetPosition(pos);
+			break;
+		case ACTION::FIRSTEND:
+			shotData.y += elapsedTime * 18;
+			skull->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x + enemyObj->GetFront().x * 20.f, shotData.y, enemyObj->GetPosition().z + enemyObj->GetFront().z * 20.f));
+			skulPos = skull->GetPosition();
+
+			enemyObj->SetAngle(angle);
+			EffectObj::GetInstance().SetAngle(EffectObj::TYPE::CIRCLE, angle);
+			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT3(pos.x + enemyObj->GetFront().x * 20.f, 0.1f, pos.z + enemyObj->GetFront().z * 20.f));
+			if (shotData.y >= 0.1f)
+			{
+				actionState = ACTION::SECOND;
+				//SetWaitState();
+			}
+			break;
+		case ACTION::SECOND:
+			waiteTime += elapsedTime;
+			if (acosf(dot) > DirectX::XMConvertToRadians(5))
+			{
+				if (cross.y < 0)
+					angle.y -= DirectX::XMConvertToRadians(180) * elapsedTime;//acosfでシータ（角度）がでる　
+				else
+					angle.y += DirectX::XMConvertToRadians(180) * elapsedTime;
+			}
+			else
+				angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
+
+			enemyObj->SetAngle(angle);
+			skull->SetAngle(angle);
+
+			if (waiteTime > shotData.time[0])
+			{
+				actionState = ACTION::THIRD;
+				waiteTime = 0;
+				enemyObj->SetAttackFlag(true);
+			}
+			break;
+		case ACTION::THIRD:
+			waiteTime += elapsedTime;
+			skulPos.x += sinf(angle.y) * shotData.speed * elapsedTime;
+			skulPos.z += cosf(angle.y) * shotData.speed * elapsedTime;
+			skull->SetPosition(skulPos);
+			if (waiteTime > shotData.time[1])
+			{
+				if (enemyObj->GetPosition().y > 0)
+				{
+					pos.y -= elapsedTime * 30;
+					enemyObj->SetPosition(pos);
+				}
+				else
+				{
+					SetWaitState();
+				}
+				enemyObj->SetShotAttackFlag(false);
+				shotData.y = -20;
+			}
+			break;
+		}
+	}
+
 }
 void Enemy::SetAccelState()
 {
