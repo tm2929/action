@@ -167,7 +167,13 @@ private:
 	bool resultflag = false;//true クリア　false オーバー
 
 	//std::unique_ptr<SoundManager>					soundManager;
-
+	//説明画像
+	std::unique_ptr<Sprite>tutorialTex;
+	std::unique_ptr<Sprite>keyTex;
+	bool tutorialFlag = false;
+	float tutorialTime = 0;
+	std::unique_ptr<Sprite>fade;
+	float fadeColorW = 0.f;
 
 	//画像tst
 	std::unique_ptr<Shader>shader;

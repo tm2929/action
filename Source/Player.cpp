@@ -88,6 +88,7 @@ Player::Player(std::shared_ptr<ModelResource> resource, std::shared_ptr<ModelRes
 	len = 0;
 	vec = { 0,0,0 };
 
+	weapon->CalculateTransform();
 }
 void Player::Update(float elapsedTime)
 {

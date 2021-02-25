@@ -84,6 +84,10 @@ void SceneGame::LightUpdate(float elapsed_time)
 }
 SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 {
+	tutorialTex = std::make_unique<Sprite>(device, L"Data/images/tyu2.png");
+	keyTex = std::make_unique<Sprite>(device, L"Data/images/button01.png");
+	nowLoading = std::make_unique<Sprite>(device, L"Data/images/NOW_LOADING.png");
+	fade = std::make_unique<Sprite>(device, L"Data/images/siro.png");
 	loading_thread = std::make_unique<std::thread>([&](ID3D11Device* device)
 		{
 			std::lock_guard<std::mutex> lock(loading_mutex);
@@ -174,8 +178,6 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 			shader = std::make_unique<ShaderEx>();
 			shader->CreateSprite(device);
 		}, device);
-	//ロード中テクスチャ
-	nowLoading = std::make_unique<Sprite>(device, L"Data/images/NOW_LOADING.png");
 	//BlendState
 	blendGame[0] = std::make_unique<BlendState>(device, BLEND_MODE::ALPHA);
 	blendGame[1] = std::make_unique<BlendState>(device, BLEND_MODE::ADD);
@@ -490,8 +492,29 @@ void SceneGame::Imgui()
 }
 int SceneGame::Update(float elapsed_time)
 {
-	if (IsNowLoading())
+	static bool fadeFlag = false;
+	if (!tutorialFlag)
 	{
+		tutorialTime += elapsed_time;
+		if (tutorialTime > 2.0f)
+		{
+
+			if (KeyInput::KeyTrigger() & KEY_ENTER || input::ButtonRisingState(0, input::PadLabel::A)&&!IsNowLoading())
+			{
+				fadeFlag = true;
+			}
+			if (fadeFlag)
+			{
+				fadeColorW += elapsed_time;
+				if (fadeColorW >= 1.0f)
+				{
+					tutorialFlag = true;
+					tutorialTime = 0;
+					fadeFlag = false;
+				}
+			}
+			
+		}
 		return 0;
 	}
 	EndLoading();
@@ -616,7 +639,7 @@ int SceneGame::Update(float elapsed_time)
 		playerHp->Update(elapsed_time, player->GetObj()->GetMaxHp(), player->GetObj()->GetHp(), 6.f);
 		enemyHp->Update(elapsed_time, bossEnemy->GetObj()->GetMaxHp(), bossEnemy->GetObj()->GetHp(), 6.f);
 		playerSp->Update(elapsed_time, player->GetObj()->GetMaxSp(), player->GetObj()->GetSp(), 6.f);
-			
+
 		CollisionManager::Judge(elapsed_time, *player->GetObj(), *bossEnemy->GetObj(), *tstStage);
 		Camera::GetInstance().SetTarget(DirectX::XMFLOAT3(player->GetObj()->GetPosition().x, player->GetObj()->GetHeadPosition().y, player->GetObj()->GetPosition().z));
 		pParticleManager->Update(elapsed_time);
@@ -697,24 +720,34 @@ int SceneGame::Update(float elapsed_time)
 		//Camera::GetInstance().Updata(elapsed_time);
 		EffectObj::GetInstance().Update();
 		break;
-		}
+	}
 
 	Camera::GetInstance().Updata(elapsed_time);
 	Camera::GetInstance().CalculateTransforms();
 	Camera::GetInstance().flag = true;
 	pHitAreaRender.CalculateTransform(Camera::GetInstance().GetView(), Camera::GetInstance().GetProjection());
 	return 0;
-	}
+}
 void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 {
-	if (IsNowLoading())
+	if (!tutorialFlag)
 	{
-		nowLoading->Render(devicecontext, 50, 1000, 416, 32, 0, 0, 832, 64, 0, 1, 1, 1, 1);
+		tutorialTex->Render(devicecontext, 0, 0, 1920, 1080, 0, 0, 1920, 1080, 0, 1, 1, 1, 1);
+		if(IsNowLoading()&&tutorialTime<2.0f)nowLoading->Render(devicecontext, 50, 1000, 416, 32, 0, 0, 832, 64, 0, 1, 1, 1, 1);
+		else
+		{
+			blendGame[0]->Activate(devicecontext);
+			keyTex->Render(devicecontext, 50, 800, 84, 84, 0, 0, 84, 84, 0, 1, 1, 1, 1);
+			blendGame[0]->Deactivate(devicecontext);
+		}
+		blendGame[0]->Activate(devicecontext);
+		fade->Render(devicecontext, 0, 0, 1920,1080, 0, 0, 1024, 1024, 0, 0, 0, 0, fadeColorW);
+		blendGame[0]->Deactivate(devicecontext);
 		return;
-	}
+	}	
 	EndLoading();
+	
 	//ビュー行列
-
 	const float PI = 3.14f;
 	DirectX::XMFLOAT4X4 view, projection;
 	view = Camera::GetInstance().GetView();
@@ -796,7 +829,7 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 		modelRenderer->Draw(devicecontext, tstStage->GetFloor()->GetModel());
 		modelRenderer->Draw(devicecontext, bossEnemy->GetModel(), VECTOR4(1.0f, 1.0f, 1.0f, 1.0f));
 
-		if(bossEnemy->GetSkull()->GetExist())modelRenderer->Draw(devicecontext, bossEnemy->GetSkull()->GetModel(), VECTOR4(1.0f, 1.0f, 1.0f, 1.0f));
+		if (bossEnemy->GetSkull()->GetExist())modelRenderer->Draw(devicecontext, bossEnemy->GetSkull()->GetModel(), VECTOR4(1.0f, 1.0f, 1.0f, 1.0f));
 		modelRenderer->End(devicecontext);
 
 		if (hitRenderFlag)
@@ -829,7 +862,7 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 			EfectModelRenderer->Draw(devicecontext, tstbox->GetModel(), tstColor);
 			EfectModelRenderer->Draw(devicecontext, tstbox1->GetModel(), tstColor1);
 			EfectModelRenderer->End(devicecontext);
-	}
+		}
 #else
 		EfectModelRenderer->Begin(devicecontext, view_projection, VECTOR4(0, -1, -1, 1));
 		EfectModelRenderer->Draw(devicecontext, tstbox->GetModel(), tstColor);
@@ -839,7 +872,7 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 		blendGame[1]->Deactivate(devicecontext);
 		samplerWrap->Deactivate(devicecontext);
 		lightBuffer->DeActivate(devicecontext);
-}
+	}
 
 	frameBuffer[0]->Deactivate(devicecontext);
 	rasterizer->SetRasterizerState(RS_CULL_BACK, devicecontext);
