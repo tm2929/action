@@ -83,7 +83,6 @@ Player::Player(std::shared_ptr<ModelResource> resource, std::shared_ptr<ModelRes
 	{
 		animSpeeds[i] = 1.0f;
 	}
-
 	LoadAnimSpeed();
 	len = 0;
 	vec = { 0,0,0 };
@@ -393,18 +392,33 @@ void Player::UpdateRunState(float elapsedTime)
 	{
 		SetWaitState();
 	}
-	if (KeyInput::KeyState() & KEY_LSHIFT|| input::ButtonPressedState(0, input::PadLabel::LSHOULDER))
+	if (!playerObj->GetTiredFlag())
 	{
-		if (animNo == static_cast<int>(ANIM::RUN))
+		if (KeyInput::KeyState() & KEY_LSHIFT || input::ButtonPressedState(0, input::PadLabel::LSHOULDER))
 		{
-			animNo = static_cast<int>(ANIM::RUN1);
-			playerObj->SetAnim(animNo, true);
+			if (animNo == static_cast<int>(ANIM::RUN))
+			{
+				animNo = static_cast<int>(ANIM::RUN1);
+				playerObj->SetAnim(animNo, true);
 
-			playerObj->SetAcceleration(speedData.dashAcceleration);
-			playerObj->SetDeceleration(speedData.dashDeceleration);
-			playerObj->SetMaxMoveSpeed(speedData.dashMaxMoveSpeed);
+				playerObj->SetAcceleration(speedData.dashAcceleration);
+				playerObj->SetDeceleration(speedData.dashDeceleration);
+				playerObj->SetMaxMoveSpeed(speedData.dashMaxMoveSpeed);
+			}
+			playerObj->SetSp(playerObj->GetSp() - energyData.dashSp * elapsedTime);
+			if (playerObj->GetSp() <= 0) playerObj->SetTiredFlag(true);
 		}
-		playerObj->SetSp(playerObj->GetSp() - energyData.dashSp * elapsedTime);
+		else
+		{
+			if (animNo == static_cast<int>(ANIM::RUN1))
+			{
+				animNo = static_cast<int>(ANIM::RUN);
+				playerObj->SetAnim(animNo, true);
+				playerObj->SetAcceleration(speedData.acceleration);
+				playerObj->SetDeceleration(speedData.deceleration);
+				playerObj->SetMaxMoveSpeed(speedData.maxMoveSpeed);
+			}
+		}
 	}
 	else
 	{
@@ -416,7 +430,8 @@ void Player::UpdateRunState(float elapsedTime)
 			playerObj->SetDeceleration(speedData.deceleration);
 			playerObj->SetMaxMoveSpeed(speedData.maxMoveSpeed);
 		}
-
+		if (playerObj->GetSp() > 30)
+			playerObj->SetTiredFlag(false);
 	}
 	if (KeyInput::KeyTrigger() & KEY_V || input::ButtonRisingState(0, input::PadLabel::X))
 	{

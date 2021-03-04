@@ -114,7 +114,7 @@ void Stage::Update(float elapsedTime)
 	front1Cube.HitAreaTransform({ 67,0,-336 }, { 0,0,0 }, { 200,60,100 });
 	front2Cube.HitAreaTransform({ -262,0,-336 }, { 0,0,0 }, { 181,60,100 });
 	haka1Cube.HitAreaTransform({ -81,0,-336 }, { 0,0,0 }, { 148,60,100, });
-	back1Cube.HitAreaTransform({ 67,0,229 }, { 0,0,0 }, { 190,60,100 });
+	back1Cube.HitAreaTransform({ 67,0,229 }, { 0,0,0 }, { 220,60,100 });
 	back2Cube.HitAreaTransform({ -259,0,228 }, { 0,0,0 }, { 184,60,100 });
 	haka2Cube.HitAreaTransform({ -75,0,231 }, { 0,0,0 }, { 142,60,100 });
 

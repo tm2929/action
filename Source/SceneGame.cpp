@@ -499,7 +499,7 @@ int SceneGame::Update(float elapsed_time)
 		if (tutorialTime > 2.0f)
 		{
 
-			if (KeyInput::KeyTrigger() & KEY_ENTER || input::ButtonRisingState(0, input::PadLabel::A)&&!IsNowLoading())
+			if (KeyInput::KeyTrigger() & KEY_ENTER || input::ButtonRisingState(0, input::PadLabel::A) && !IsNowLoading())
 			{
 				fadeFlag = true;
 			}
@@ -513,7 +513,7 @@ int SceneGame::Update(float elapsed_time)
 					fadeFlag = false;
 				}
 			}
-			
+
 		}
 		return 0;
 	}
@@ -733,7 +733,7 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 	if (!tutorialFlag)
 	{
 		tutorialTex->Render(devicecontext, 0, 0, 1920, 1080, 0, 0, 1920, 1080, 0, 1, 1, 1, 1);
-		if(IsNowLoading()&&tutorialTime<2.0f)nowLoading->Render(devicecontext, 50, 1000, 416, 32, 0, 0, 832, 64, 0, 1, 1, 1, 1);
+		if (IsNowLoading() && tutorialTime < 2.0f)nowLoading->Render(devicecontext, 50, 1000, 416, 32, 0, 0, 832, 64, 0, 1, 1, 1, 1);
 		else
 		{
 			blendGame[0]->Activate(devicecontext);
@@ -741,12 +741,12 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 			blendGame[0]->Deactivate(devicecontext);
 		}
 		blendGame[0]->Activate(devicecontext);
-		fade->Render(devicecontext, 0, 0, 1920,1080, 0, 0, 1024, 1024, 0, 0, 0, 0, fadeColorW);
+		fade->Render(devicecontext, 0, 0, 1920, 1080, 0, 0, 1024, 1024, 0, 0, 0, 0, fadeColorW);
 		blendGame[0]->Deactivate(devicecontext);
 		return;
-	}	
+	}
 	EndLoading();
-	
+
 	//ƒrƒ…[s—ñ
 	const float PI = 3.14f;
 	DirectX::XMFLOAT4X4 view, projection;
@@ -908,7 +908,10 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 	enemyHp->Render(devicecontext, DirectX::XMFLOAT2(673, 873), 20.f, DirectX::XMFLOAT2(0, 0), DirectX::XMFLOAT2(630, 18), 0, DirectX::XMFLOAT4(1, 0, 0, 1));
 	//SP
 	playerSpMax->Render(devicecontext, shader.get(), 180, 58, player->GetObj()->GetMaxHp() * 6.04f, 24, 0, 0, 500, 20, 0, 1, 1, 1, 1);
-	playerSp->Render(devicecontext, DirectX::XMFLOAT2(183, 60), 20.f, DirectX::XMFLOAT2(0, 0), DirectX::XMFLOAT2(494, 14), 0, DirectX::XMFLOAT4(1, 1, 1, 1));
+	if (player->GetObj()->GetTiredFlag())
+		playerSp->Render(devicecontext, DirectX::XMFLOAT2(183, 60), 20.f, DirectX::XMFLOAT2(0, 0), DirectX::XMFLOAT2(494, 14), 0, DirectX::XMFLOAT4(1, 0, 0, 1));
+	else
+		playerSp->Render(devicecontext, DirectX::XMFLOAT2(183, 60), 20.f, DirectX::XMFLOAT2(0, 0), DirectX::XMFLOAT2(494, 14), 0, DirectX::XMFLOAT4(1, 1, 1, 1));
 	pFadeOut.Render(devicecontext);
 
 	blendGame[0]->Deactivate(devicecontext);

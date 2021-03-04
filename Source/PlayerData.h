@@ -39,6 +39,8 @@ struct PlayerSpeedData
 	float dashAcceleration = 0;//加速
 	float dashDeceleration = 0;//減速
 
+	bool dashFlag;//ダッシュフラグ
+	
 	float knockBackSpeed = 0;
 	float turnSpeed = DirectX::XMConvertToRadians(360);
 

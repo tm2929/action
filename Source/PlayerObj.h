@@ -21,6 +21,7 @@ public:
 	const float& GetAcceleration() { return acceleration; }
 	const float& GetDeceleration() { return deceleration; }
 	const float& GetTurnSpeed() { return turnSpeed; }
+	const bool& GetTiredFlag() { return tiredFlag; }
 	const DirectX::XMFLOAT3& GetHeadPosition() { return headPosition; }
 	const float& GetAccelTime() { return accelTime; }
 	const float& GetAccelSpeed() { return accelSpeed; }
@@ -39,6 +40,7 @@ public:
 	void SetAccelTime(const float accelTime) { this->accelTime = accelTime; }
 	void SetAccelSpeed(const float accelSpeed) { this->accelSpeed = accelSpeed; }
 	void SetAccelFlag(const bool accelFlag) { this->accelFlag = accelFlag; }
+	void SetTiredFlag(const bool tiredFlag) { this->tiredFlag = tiredFlag; }
 	void SetHitStateFlag(const bool hitFlag) { this->hitStateFlag = hitFlag; }
 	void SetEnmKnockBack(const float enmKnockBack) { this->enmKnockBack = enmKnockBack; }
 	void SetKnockBackSpeed(const float knockBackSpeed) { this->knockBackSpeed = knockBackSpeed; }
@@ -69,6 +71,7 @@ private:
 	float deceleration = 0;//減速
 	float turnSpeed = DirectX::XMConvertToRadians(360);
 
+	bool	tiredFlag;//スタミナキレフラグ
 	bool damageFlag = false;
 	//加速ダッシュ時
 	float accelTime = 0;

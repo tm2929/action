@@ -53,6 +53,7 @@ public:
 	enum class SOUNDGAME
 	{
 		GAME_BGM,//ƒQ[ƒ€BGM
+		DEATH,
 		HIT,
 		DAMAGE,
 		THUNDER1,//—‹ŠJŽnŽž

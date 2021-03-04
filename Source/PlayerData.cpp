@@ -36,7 +36,7 @@ void PlayerSpeedData::Init()
 	dashMaxMoveSpeed = 90.f;
 	dashAcceleration = 40.f;
 	dashDeceleration = 20.f;
-
+	dashFlag = false;
 	accelSpeed = 160.f;
 	accelTime = 0.45f;
 

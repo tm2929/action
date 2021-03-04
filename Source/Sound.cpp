@@ -210,6 +210,7 @@ void SoundManager::CreateSoundSourceGame()
 	SoundData sounddata[] =
 	{
 		{static_cast<int>(SOUNDGAME::GAME_BGM),"Data/sounds/GAMEBGM.wav"},
+		{static_cast<int>(SOUNDGAME::DEATH),"Data/sounds/OVERBGM.wav"},
 		{static_cast<int>(SOUNDGAME::HIT),"Data/sounds/SE/hit.wav"},
 		{static_cast<int>(SOUNDGAME::DAMAGE),"Data/sounds/SE/damage.wav"},
 		{static_cast<int>(SOUNDGAME::THUNDER1),"Data/sounds/SE/THUNDER1.wav"},
