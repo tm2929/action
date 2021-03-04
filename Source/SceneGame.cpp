@@ -574,9 +574,8 @@ int SceneGame::Update(float elapsed_time)
 		static float dispTimer, dispMaxTimer;
 		dispMaxTimer = 0.5f;
 		static float effectAngle, effectAngle1;
-		static float effectColor, effectColor1;
-		static DirectX::XMFLOAT3 effectScale = DirectX::XMFLOAT3(13, 2.f, 13);
-		static DirectX::XMFLOAT3 effectScale1 = DirectX::XMFLOAT3(16, 2.f, 16);
+		static DirectX::XMFLOAT3 effectScale;
+		static DirectX::XMFLOAT3 effectScale1;
 #if 1
 		if (bossEnemy->GetObj()->GetRAttackFlag())
 		{
@@ -605,6 +604,8 @@ int SceneGame::Update(float elapsed_time)
 		}
 		else
 		{
+			effectScale = XMFLOAT3(13, 2.f, 13);
+			effectScale1 = XMFLOAT3(16, 2.f, 16);
 			effectAngle = 0;
 			effectAngle1 = 0;
 			dispTimer = 0;
