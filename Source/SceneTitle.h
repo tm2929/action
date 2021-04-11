@@ -25,6 +25,8 @@ private:
 	DirectX::XMFLOAT3 color = { 1,1,1 };
 	std::unique_ptr<ShaderEx>dissolveShader;
 	bool colorChangeFlag = false;
+	std::unique_ptr<Sprite>keyTex;
+	std::unique_ptr<Sprite>buttonTex;
 public:
 	std::unique_ptr<std::thread> loading_thread;
 	std::mutex loading_mutex;

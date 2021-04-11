@@ -2,7 +2,7 @@
 
 void PlayerHitData::Init()
 {
-	damage = 1.f;
+	damage = 2.5f;
 
 	attackPower[0] = 0.5f;//ˆêŒ‚–Ú
 	attackPower[1] = 0.8f;//“ñŒ‚–Ú

@@ -26,6 +26,8 @@ SceneTitle::SceneTitle(ID3D11Device* device, HWND hwnd)
 #else
 			titleTex = std::make_unique<Sprite>(device, L"Data/images/Title01.png");
 #endif
+			keyTex = std::make_unique<Sprite>(device, L"Data/images/STAET.png");
+			buttonTex = std::make_unique<Sprite>(device, L"Data/images/button01.png");
 			samplerWrap = std::make_unique<Sampler>(device, D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP);
 			rasterizer = std::make_unique<RasterizerState>();
 			rasterizer->CreateRasterizerState(device);
@@ -121,7 +123,8 @@ void SceneTitle::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 #else
 	titleTex->DissolveRender(devicecontext, dissolveShader.get(),srv.Get(), 308, 300, 1050, 169, 0, 0, 1050, 169, 0, 1, 1, 1, 1);
 #endif
-
+	keyTex->Render(devicecontext, 300, 705, 346, 69, 0, 0, 346, 69, 0, 1, 1, 1, 0.8f); 
+	buttonTex->Render(devicecontext, 700, 700, 84, 84, 0, 0, 84, 84, 0, 1, 1, 1, 0.8f);
 	pFadeOut.Render(devicecontext);
 
 	samplerWrap->Deactivate(devicecontext);
