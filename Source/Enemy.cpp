@@ -20,7 +20,7 @@ extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wparam
 Enemy::Enemy(std::shared_ptr<ModelResource> resource)
 {
 	enemyObj = std::make_unique<EnemyObj>(resource);
-
+	
 	//初期設定
 	enemyObj->SetPosition(DirectX::XMFLOAT3(0.0f, 0.0f, -200.0f));
 	enemyObj->SetScale(DirectX::XMFLOAT3(.2f, 0.2f, 0.2f));
@@ -31,6 +31,15 @@ Enemy::Enemy(std::shared_ptr<ModelResource> resource)
 	//ノックバック
 	enemyObj->SetKnockBackFlag(false);
 
+	//回転攻撃時エフェクト
+	rAttackObj1 = std::make_unique<Character>(pLoadModel.GetModelResource("Rattack"));
+	rAttackObj1->SetPosition(DirectX::XMFLOAT3(0.0f, 5.0f, 0.0f));
+	rAttackObj1->SetScale(DirectX::XMFLOAT3(5.0f, 5.0f, 5.0f));
+	rAttackObj1->SetAngle(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
+	rAttackObj2 = std::make_unique<Character>(pLoadModel.GetModelResource("Rattack"));
+	rAttackObj2->SetPosition(DirectX::XMFLOAT3(0.0f, 5.0f, 0.0f));
+	rAttackObj2->SetScale(DirectX::XMFLOAT3(5.0f, 5.0f, 5.0f));
+	rAttackObj2->SetAngle(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
 
 	//HP
 	enemyObj->SetHp(100.f);
@@ -886,6 +895,39 @@ void Enemy::UpdateLongAttackState(float elapsedTime)
 	EffectObj::GetInstance().SetPosition(EffectObj::TYPE::TST, DirectX::XMFLOAT3(enemyObj->GetPosition().x + sinf(enemyObj->GetAngle().y) * 50.f, 0, enemyObj->GetPosition().z + cosf(enemyObj->GetAngle().y) * 50.f));
 	if (number == LONGATTACK::RUSH)
 	{
+		static float dispTimer, dispMaxTimer;
+		dispMaxTimer = 0.5f;
+		static float effectAngle1,effectAngle2;
+		static DirectX::XMFLOAT3 effectScale1;
+		static DirectX::XMFLOAT3 effectScale2;
+		if (enemyObj->GetRAttackFlag())
+		{
+			dispTimer += elapsedTime;
+			rAttackObj1->CalculateTransform();
+			rAttackObj1->SetAngle(DirectX::XMFLOAT3(0, effectAngle1, 0));
+			effectAngle1 += elapsedTime * DirectX::XMConvertToRadians(720);
+			rAttackObj1->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x, enemyObj->GetPosition().y + 8, enemyObj->GetPosition().z));
+			rAttackObj1->SetScale(effectScale1);
+			rAttackObj2->CalculateTransform();
+			rAttackObj2->SetAngle(DirectX::XMFLOAT3(0, effectAngle2, 0));
+			effectAngle2 += elapsedTime * DirectX::XMConvertToRadians(720);
+			rAttackObj2->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x, enemyObj->GetPosition().y, enemyObj->GetPosition().z));
+			rAttackObj2->SetScale(effectScale2);
+			effectScale1.x = OutSine(dispTimer, dispMaxTimer, easingScale1, 0);
+			effectScale2.x = OutSine(dispTimer, dispMaxTimer, easingScale2, 0);
+			effectColorW1 = OutSine(dispTimer, dispMaxTimer, easingColor, 0);
+			effectColorW2 = OutSine(dispTimer, dispMaxTimer, easingColor, 0);
+			effectScale1.z = effectScale1.x;
+			effectScale2.z = effectScale2.x;
+		}
+		else
+		{
+			effectScale1 = XMFLOAT3(13, 2.f, 13);
+			effectScale2 = XMFLOAT3(16, 2.f, 16);
+			effectAngle1 = 0;
+			effectAngle2 = 0;
+			dispTimer = 0;
+		}
 		RushAttack(elapsedTime);
 	}
 	if (number == LONGATTACK::THUNDER)

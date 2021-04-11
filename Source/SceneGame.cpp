@@ -16,7 +16,6 @@
 #include <imgui_impl_dx11.h>
 #include <imgui_impl_win32.h>
 #include <imgui_internal.h>
-
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
 #endif
 
@@ -63,16 +62,12 @@ void SceneGame::LightUpdate(float elapsed_time)
 	//Light::SetPointLight(1, VECTOR3(e.x, 30, e.z), VECTOR4(lightColor), range);
 	//Light::SetSpotLight(0, VECTOR3(p.x, 30, p.z), VECTOR4(1, 0, 0, 10), lightDir, 40, neartst, 30 * 0.01745f);
 	//Light::SetSpotLight(1, VECTOR3(e.x, 30, e.z), VECTOR4(1, 1, 0, 10), lightDir, 40, neartst, 30 * 0.01745f);
-
 	//Light::SetSpotLight(2, VECTOR3(80, 30, 80), VECTOR4(lightColor), lightDir, 40, neartst, 30 * 0.01745f);
 	//Light::SetSpotLight(3, VECTOR3(p.x, 30, p.z), VECTOR4(1.0f,0.0f,0.0f,1.f),LightDir, 80, neartst, fartst);
-
 	//Light::SetSpotLight(2,pos, VECTOR4(0, 0, 1,1),dir,range, neartst, fartst);
 	/*Light::SetSpotLight(2,pos, VECTOR3(1, 0, 0),dir,range, neartst, fartst);
 	Light::SetSpotLight(3,pos, VECTOR3(0, 1, 0),dir,range, neartst, fartst);
 	Light::SetSpotLight(4,pos, VECTOR3(1, 1, 0),dir,range, neartst, fartst);*/
-
-
 	//lightBuffer->data.lightColor = Light::DirLightColor;
 	lightBuffer->data.eyePos.x = camera.GetEye().x;
 	lightBuffer->data.eyePos.y = camera.GetEye().y;
@@ -101,7 +96,6 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 				//pLoadModel.Load(device, "Data/fbx/ttt.mdl", "TSTPLAYER");
 			pLoadModel.Load(device, "Data/fbx/enemy/enemy04.fbx", "Enemy");
 			pLoadModel.Load(device, "Data/fbx/tst3.fbx", "tst");
-
 
 			tstbox = std::make_unique<Character>(pLoadModel.GetModelResource("tst"));
 			tstbox->SetPosition(DirectX::XMFLOAT3(0.0f, 5.0f, 0.0f));
@@ -141,11 +135,6 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 			skyTexture->Load(device, L"Data/images/aaas.jpg");
 			skyCube = std::make_unique<TexMeshObj>();
 			skyCube->Create(device, VECTOR3(2000, 1000, 2000), VECTOR3(0, 0, 0), VECTOR3(0, 300, 0), TexMeshObj::ObjectType::GeometricCube, skyTexture);
-
-			/*bisuko_texture = std::make_unique<Texture>();
-			bisuko_texture->Load(device, L"Data/ASSETS/bisuko.jpg");
-			bisukoCube = std::make_unique<TexMeshObj>();
-			bisukoCube->Create(device, VECTOR3(50, 50, 50), VECTOR3(0, 0, 0), VECTOR3(0, 30, 0), TexMeshObj::ObjectType::GeometricCube, bisuko_texture);*/
 			rasterizer = std::make_unique<RasterizerState>();
 			rasterizer->CreateRasterizerState(device);
 			samplerWrap = std::make_shared<Sampler>(device, D3D11_FILTER_MIN_MAG_MIP_LINEAR, D3D11_TEXTURE_ADDRESS_WRAP);
@@ -860,8 +849,8 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 		if (bossEnemy->GetObj()->GetRAttackFlag())
 		{
 			EfectModelRenderer->Begin(devicecontext, view_projection, VECTOR4(0, -1, -1, 1));
-			EfectModelRenderer->Draw(devicecontext, tstbox->GetModel(), tstColor);
-			EfectModelRenderer->Draw(devicecontext, tstbox1->GetModel(), tstColor1);
+			EfectModelRenderer->Draw(devicecontext, bossEnemy->GetRAttackObj1()->GetModel(), tstColor);
+			EfectModelRenderer->Draw(devicecontext, bossEnemy->GetRAttackObj2()->GetModel(), tstColor1);
 			EfectModelRenderer->End(devicecontext);
 		}
 #else

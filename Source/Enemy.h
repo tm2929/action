@@ -15,7 +15,12 @@ public:
 	Model* GetModel() { return enemyObj->GetModel(); }
 	std::shared_ptr<EnemyObj> GetObj() { return enemyObj; }
 	EnemyThunderData GetThunderData() { return thunderData; }
+	std::shared_ptr<Character> GetRAttackObj1() { return rAttackObj1; }
+	float GetEffectColorW1()const { return effectColorW1; }
+	std::shared_ptr<Character> GetRAttackObj2() { return rAttackObj2; }
+	float GetEffectColorW2()const { return effectColorW2; }
 	std::shared_ptr<Character> GetSkull() { return skull; }
+
 	bool attackStartFlag = false;//戦闘開始フラグ
 private:
 	enum class STATE
@@ -151,8 +156,16 @@ private:
 	DirectX::XMFLOAT3 playerPos = { 0,0,0 };
 	DirectX::XMFLOAT3 angle = { 0,0,0 };
 	std::shared_ptr<EnemyObj>enemyObj;
-	std::shared_ptr<Character>skull;
+	//RATTACK時エフェクト
+	std::shared_ptr<Character>rAttackObj1;
+	std::shared_ptr<Character>rAttackObj2;
+	float easingScale1 = 30;
+	float easingScale2 = 30;
+	float easingColor = 4.f;
+	float effectColorW1 = 1;
+	float effectColorW2 = 1;
 
+	std::shared_ptr<Character>skull;
 	EnemyHitData	hitData;
 	EnemyChoiceData choiceData;
 	EnemyAttackData attackData;

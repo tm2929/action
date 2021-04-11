@@ -19,10 +19,10 @@ struct EnemyChoiceData
 {
 	float waiteTime = 0;//待機時間
 	float time = 0;
-	int num;//debug時、攻撃number変更用
+	int num = 0;//debug時、攻撃number変更用
 	float choiceLen[3];	//攻撃選択距離
-	bool firstFlag; //一番最初はプレイヤーがある程度近づいてからボス戦をはじめるように
-	float firstArea; //戦闘開始距離
+	bool firstFlag=false; //一番最初はプレイヤーがある程度近づいてからボス戦をはじめるように
+	float firstArea = 0; //戦闘開始距離
 
 	void Init();
 };
