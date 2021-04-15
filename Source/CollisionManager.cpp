@@ -40,32 +40,84 @@ void CollisionManager::Judge(float elapsed_time, PlayerObj& player, EnemyObj& en
 	Cylinder playerArea = player.GetHitArea();
 	Cylinder enemyArea = enemy.GetHitArea();
 	//playerとenemyの当たり判定(体同士の)
-	if (Collision::isHitCylinder(playerArea, enemyArea) && !player.GetKnockBackFlag())
+	if (player.GetAccelFlag())
 	{
-		//player->SetHitFlag(true);
-		//player.SetHitPosition(DirectX::XMFLOAT3(enemy.GetPosition().x, player.GetPosition().y, enemy.GetPosition().z));
+		Cylinder beforePlayerArea = player.GetHitArea();
+		beforePlayerArea.min.x = player.GetBeforePosition().x;
+		beforePlayerArea.min.z = player.GetBeforePosition().z;
 
-		//bossEnemy->SetHitFlag(true);
-		//enemy.SetHitPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, player.GetPosition().z));
+		beforePlayerArea.max.x = player.GetBeforePosition().x;
+		beforePlayerArea.max.z = player.GetBeforePosition().z;
 
-		DirectX::XMVECTOR b = DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(enemy.GetPosition().x, 0, enemy.GetPosition().z));
-		DirectX::XMVECTOR p = DirectX::XMLoadFloat3(&player.GetPosition());
+		DirectX::XMVECTOR beforePos = DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(player.GetBeforePosition().x, 0, player.GetBeforePosition().z));
+		DirectX::XMVECTOR nowPos = DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(player.GetPosition().x, 0, player.GetPosition().z));
+		DirectX::XMVECTOR vec = DirectX::XMVectorSubtract(nowPos,beforePos);
+		float bnLen;
+		DirectX::XMStoreFloat(&bnLen, DirectX::XMVector3Length(vec));
+		DirectX::XMVECTOR normalize = DirectX::XMVector3Normalize(vec);
+		DirectX::XMFLOAT3 v;
+		DirectX::XMStoreFloat3(&v, normalize);
+		Cylinder pa = beforePlayerArea;
+		
+		for (int i = 0; i < 10; i++)
+		{
+			pa.max.x = beforePlayerArea.max.x + v.x * 2 * i;
+			pa.max.z = beforePlayerArea.max.z + v.z * 2 * i;
+			
+			pa.min.x = beforePlayerArea.min.x + v.x * 2 * i;
+			pa.min.z = beforePlayerArea.min.z + v.z * 2 * i;
 
-		//ボスからプレイヤーへのベクトル
-		DirectX::XMVECTOR vec = DirectX::XMVectorSubtract(p, b);
-		vec = DirectX::XMVector3Normalize(vec);
+			if (Collision::isHitCylinder(pa, enemyArea) && !player.GetKnockBackFlag())
+			{
+				DirectX::XMVECTOR b = DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(enemy.GetPosition().x, 0, enemy.GetPosition().z));
+				
+				DirectX::XMVECTOR p = DirectX::XMLoadFloat3(&Vec3Subtract(pa.max, Vec3Multiply(v,2)));
 
-		DirectX::XMFLOAT3 angle;
-		DirectX::XMStoreFloat3(&angle, vec);
+				//ボスからプレイヤーへのベクトル
+				DirectX::XMVECTOR vec = DirectX::XMVectorSubtract(p, b);
+				vec = DirectX::XMVector3Normalize(vec);
 
-		//半径の合計
-		float len = player.GetHitArea().area + enemy.GetHitArea().area;
+				DirectX::XMFLOAT3 angle;
+				DirectX::XMStoreFloat3(&angle, vec);
 
-		player.SetPosition(DirectX::XMFLOAT3(enemy.GetPosition().x + angle.x * len, player.GetPosition().y, enemy.GetPosition().z + angle.z * len));
-		player.SetHitFlag(true);
-		enemy.SetHitFlag(true);
+				//半径の合計
+				float len = player.GetHitArea().area + enemy.GetHitArea().area;
+				player.SetPosition(DirectX::XMFLOAT3(enemy.GetPosition().x + angle.x * len, player.GetPosition().y, enemy.GetPosition().z + angle.z * len));
+				player.SetHitFlag(true);
+				enemy.SetHitFlag(true);
+				player.SetAccelSpeed(0);
+				break;
+			}
+			if (i * 2 > bnLen) break;
+		}
 	}
+	else
+	{
+		if (Collision::isHitCylinder(playerArea, enemyArea) && !player.GetKnockBackFlag())
+		{
+			//player->SetHitFlag(true);
+			//player.SetHitPosition(DirectX::XMFLOAT3(enemy.GetPosition().x, player.GetPosition().y, enemy.GetPosition().z));
 
+			//bossEnemy->SetHitFlag(true);
+			//enemy.SetHitPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, player.GetPosition().z));
+
+			DirectX::XMVECTOR b = DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(enemy.GetPosition().x, 0, enemy.GetPosition().z));
+			DirectX::XMVECTOR p = DirectX::XMLoadFloat3(&player.GetPosition());
+
+			//ボスからプレイヤーへのベクトル
+			DirectX::XMVECTOR vec = DirectX::XMVectorSubtract(p, b);
+			vec = DirectX::XMVector3Normalize(vec);
+
+			DirectX::XMFLOAT3 angle;
+			DirectX::XMStoreFloat3(&angle, vec);
+
+			//半径の合計
+			float len = player.GetHitArea().area + enemy.GetHitArea().area;
+			player.SetPosition(DirectX::XMFLOAT3(enemy.GetPosition().x + angle.x * len, player.GetPosition().y, enemy.GetPosition().z + angle.z * len));
+			player.SetHitFlag(true);
+			enemy.SetHitFlag(true);
+		}
+	}
 	//playerの攻撃時
 	if (player.GetAttackFlag() && !player.GetDamageFlag()&&!enemy.GetShotAttackFlag())
 	{

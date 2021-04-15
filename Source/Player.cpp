@@ -1255,6 +1255,9 @@ void Player::SetAccelState()
 	playerObj->SetAccelSpeed(speedData.accelSpeed);
 
 	playerObj->SetSp(playerObj->GetSp() - energyData.accelSp);
+
+	pos = playerObj->GetPosition();
+	playerObj->SetBeforePosition(pos);
 }
 void Player::UpdateAccelState(float elapsedTime)
 {

@@ -53,10 +53,10 @@ void ParticleManager::Init(ID3D11Device* device)
 	board.push_back(std::make_shared <Board>(device, L"Data/images/koa.png"));
 	board.push_back(std::make_shared <Board>(device, L"Data/images/image14.png"));
 	board.push_back(std::make_shared <Board>(device, L"Data/images/lp.png"));
-	board.push_back(std::make_shared <Board>(device, L"Data/Assets/particle.png"));
-	board.push_back(std::make_shared <Board>(device, L"Data/Assets/particle01.png"));
-	board.push_back(std::make_shared <Board>(device, L"Data/Assets/Image/fire.png"));
-	board.push_back(std::make_shared <Board>(device, L"Data/Assets/Image/fire2.png"));
+	board.push_back(std::make_shared <Board>(device, L"Data/Images/particle.png"));
+	board.push_back(std::make_shared <Board>(device, L"Data/Images/particle01.png"));
+	board.push_back(std::make_shared <Board>(device, L"Data/Images/fire.png"));
+	board.push_back(std::make_shared <Board>(device, L"Data/Images/fire2.png"));
 	board.push_back(std::make_shared <Board>(device, L"Data/Images/koko.png"));
 	//Load();
 

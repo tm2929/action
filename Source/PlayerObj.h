@@ -23,6 +23,7 @@ public:
 	const float& GetTurnSpeed() { return turnSpeed; }
 	const bool& GetTiredFlag() { return tiredFlag; }
 	const DirectX::XMFLOAT3& GetHeadPosition() { return headPosition; }
+	const DirectX::XMFLOAT3& GetBeforePosition() { return beforePos; }
 	const float& GetAccelTime() { return accelTime; }
 	const float& GetAccelSpeed() { return accelSpeed; }
 	const bool& GetAccelFlag() { return  accelFlag; }
@@ -33,6 +34,7 @@ public:
 	const bool& GetTrajectoryFlag() { return  trajectoryFlag; }
 
 	//セッター
+	void SetBeforePosition(const DirectX::XMFLOAT3& p) { beforePos = p; }
 	void SetMaxMoveSpeed(const float maxMoveSpeed) { this->maxMoveSpeed = maxMoveSpeed; }
 	void SetAcceleration(const float acceleration) { this->acceleration = acceleration; }
 	void SetDeceleration(const float deceleration) { this->deceleration = deceleration; }
@@ -74,6 +76,7 @@ private:
 	bool	tiredFlag;//スタミナキレフラグ
 	bool damageFlag = false;
 	//加速ダッシュ時
+	DirectX::XMFLOAT3 beforePos;
 	float accelTime = 0;
 	float accelSpeed = 0;
 	bool  accelFlag = false;

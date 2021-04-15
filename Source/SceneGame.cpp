@@ -95,16 +95,16 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 			//	pLoadModel.Load(device, "Data/mdl/tst/mdl/tst.mdl", "TSTPLAYER");
 				//pLoadModel.Load(device, "Data/fbx/ttt.mdl", "TSTPLAYER");
 			pLoadModel.Load(device, "Data/fbx/enemy/enemy04.fbx", "Enemy");
-			pLoadModel.Load(device, "Data/fbx/tst3.fbx", "tst");
+			pLoadModel.Load(device, "Data/fbx/Rattack.fbx", "Rattack");
 
-			tstbox = std::make_unique<Character>(pLoadModel.GetModelResource("tst"));
+		/*	tstbox = std::make_unique<Character>(pLoadModel.GetModelResource("tst"));
 			tstbox->SetPosition(DirectX::XMFLOAT3(0.0f, 5.0f, 0.0f));
 			tstbox->SetScale(DirectX::XMFLOAT3(5.0f, 5.0f, 5.0f));
 			tstbox->SetAngle(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
 			tstbox1 = std::make_unique<Character>(pLoadModel.GetModelResource("tst"));
 			tstbox1->SetPosition(DirectX::XMFLOAT3(0.0f, 5.0f, 0.0f));
 			tstbox1->SetScale(DirectX::XMFLOAT3(5.0f, 5.0f, 5.0f));
-			tstbox1->SetAngle(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
+			tstbox1->SetAngle(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));*/
 
 			tstStage = std::make_shared<Stage>(device);
 
@@ -113,8 +113,6 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 
 			//軌跡
 			trajectory = std::make_unique<Trajectory>(device, L"Data/images/SwordLine01.png");
-			//trajectory = std::make_unique<Trajectory>(device,L"Data/Effect/Texture/actionlines1.png");
-			//trajectory = std::make_unique<Trajectory>(device,L"Data/Assets/pika.jpg");
 			//シャドウ
 			shadowmap = std::make_unique<FrameBuffer>(device, 1024 * 5, 1024 * 5, false/*enable_msaa*/, 1, DXGI_FORMAT_UNKNOWN/*not needed*/, DXGI_FORMAT_R32_TYPELESS);
 			frameBuffer[0] = std::make_unique<FrameBuffer>(device, 1920, 1080, true, 1, DXGI_FORMAT_R16G16B16A16_FLOAT, DXGI_FORMAT_R24G8_TYPELESS);
@@ -173,10 +171,6 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 	//サウンドの初期化
 	SoundManager::getinctance().Create(hwnd);
 	SoundManager::getinctance().CreateSoundSourceGame();
-	//soundManager = std::make_unique<SoundManager>(hwnd);
-	//soundManager->CreateSoundSourceGame();
-	//soundBGM = soundManager->CreateSoundSource("Data/sounds/BGM.wav");
-	//soundBGM->Play(true);
 #ifdef USE_IMGUI
 	hitRenderFlag = true;
 #else
@@ -402,18 +396,19 @@ void SceneGame::Imgui()
 		bloomEffect->SetGrowExtractionThreshold(bloomThreshold);
 		if (ImGui::CollapsingHeader("vignetteEffect"))
 		{
-			float area = vignetteEffect->constantBuffer->data.area;
+			float area;
 			ImGui::InputFloat("area", &area, 0.1f);
-			vignetteEffect->constantBuffer->data.area = area;
-			float smooth = vignetteEffect->constantBuffer->data.smooth;
+			vignetteEffect->SetVignetteArea(area);
+			float smooth;
 			ImGui::InputFloat("smooth", &smooth, 0.1f);
-			vignetteEffect->constantBuffer->data.smooth = smooth;
-			DirectX::XMFLOAT4 vignetteColor = vignetteEffect->constantBuffer->data.vignetteColor;
+			vignetteEffect->SetVignetteSmooth(smooth);
+
+			DirectX::XMFLOAT4 vignetteColor;
 			ImGui::InputFloat("vignetteColor_x", &vignetteColor.x, 0.1f);
 			ImGui::InputFloat("vignetteColor_y", &vignetteColor.y, 0.1f);
 			ImGui::InputFloat("vignetteColor_z", &vignetteColor.z, 0.1f);
 			ImGui::InputFloat("vignetteColor_w", &vignetteColor.w, 0.1f);
-			vignetteEffect->constantBuffer->data.vignetteColor = vignetteColor;
+			vignetteEffect->SetVignetteColor(vignetteColor);
 		}
 	}
 	//Fog
@@ -479,12 +474,12 @@ void SceneGame::Imgui()
 	ImGui::End();
 #endif
 }
-int SceneGame::Update(float elapsed_time)
+int SceneGame::Update(float elapsedTime)
 {
 	static bool fadeFlag = false;
 	if (!tutorialFlag)
 	{
-		tutorialTime += elapsed_time;
+		tutorialTime += elapsedTime;
 		if (tutorialTime > 2.0f)
 		{
 
@@ -494,7 +489,7 @@ int SceneGame::Update(float elapsed_time)
 			}
 			if (fadeFlag)
 			{
-				fadeColorW += elapsed_time;
+				fadeColorW += elapsedTime;
 				if (fadeColorW >= 1.0f)
 				{
 					tutorialFlag = true;
@@ -509,7 +504,7 @@ int SceneGame::Update(float elapsed_time)
 	EndLoading();
 	Imgui();
 	skyCube->Update();
-	LightUpdate(elapsed_time);
+	LightUpdate(elapsedTime);
 	DirectX::XMFLOAT3 angle = player->GetObj()->GetAngle();
 	DirectX::XMFLOAT3 enmposition = player->GetObj()->GetPosition();
 	static float volume = 1.0f;
@@ -522,7 +517,7 @@ int SceneGame::Update(float elapsed_time)
 	}
 #endif
 
-	if (pFadeOut.Update(elapsed_time))
+	if (pFadeOut.Update(elapsedTime))
 	{
 		SoundManager::getinctance().Stop(static_cast<int>(SoundManager::SOUNDGAME::GAME_BGM));
 		if (state == STATE::CLEAR) return SceneName::CLEAR;
@@ -542,11 +537,11 @@ int SceneGame::Update(float elapsed_time)
 		//soundBGM->SetPan(pan);
 		//soundBGM->SetVolume(volume);
 		//tstcube->Update();
-		tstStage->Update(elapsed_time);
+		tstStage->Update(elapsedTime);
 		trajectory->SetStartPosition(player->GetTrajectoryStartPosition());
 		trajectory->SetEndPosition(player->GetTrajectoryEndPosition());
 		trajectory->SwapPosition();
-		bossEnemy->Update(elapsed_time);
+		bossEnemy->Update(elapsedTime);
 		//stage->CalculateTransform();
 		AttackLine::GetInctance().Update();
 		if (firstFlag)
@@ -559,80 +554,14 @@ int SceneGame::Update(float elapsed_time)
 		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::BLACKMIST, bossEnemy->GetObj()->GetPosition());
 		EffectObj::GetInstance().Update();
 
-		//エフェクトテスト
-		static float dispTimer, dispMaxTimer;
-		dispMaxTimer = 0.5f;
-		static float effectAngle, effectAngle1;
-		static DirectX::XMFLOAT3 effectScale;
-		static DirectX::XMFLOAT3 effectScale1;
-#if 1
-		if (bossEnemy->GetObj()->GetRAttackFlag())
-		{
-			dispTimer += elapsed_time;
-			tstbox->CalculateTransform();
-			tstbox->SetAngle(DirectX::XMFLOAT3(0, effectAngle, 0));
-			effectAngle += elapsed_time * DirectX::XMConvertToRadians(720);
+		player->Update(elapsedTime);
+		playerHp->Update(elapsedTime, player->GetObj()->GetMaxHp(), player->GetObj()->GetHp(), 6.f);
+		enemyHp->Update(elapsedTime, bossEnemy->GetObj()->GetMaxHp(), bossEnemy->GetObj()->GetHp(), 6.f);
+		playerSp->Update(elapsedTime, player->GetObj()->GetMaxSp(), player->GetObj()->GetSp(), 6.f);
 
-			tstbox->SetPosition(DirectX::XMFLOAT3(bossEnemy->GetObj()->GetPosition().x, bossEnemy->GetObj()->GetPosition().y + 8, bossEnemy->GetObj()->GetPosition().z));
-			tstbox->SetScale(effectScale);
-
-			tstbox1->CalculateTransform();
-			tstbox1->SetAngle(DirectX::XMFLOAT3(0, effectAngle1, 0));
-			effectAngle1 += elapsed_time * DirectX::XMConvertToRadians(720);
-			tstPos1 = bossEnemy->GetObj()->GetPosition();
-			tstbox1->SetPosition(DirectX::XMFLOAT3(bossEnemy->GetObj()->GetPosition().x, bossEnemy->GetObj()->GetPosition().y, bossEnemy->GetObj()->GetPosition().z));
-			tstbox1->SetScale(effectScale1);
-
-			effectScale.x = OutSine(dispTimer, dispMaxTimer, easingScale, 0);
-			effectScale1.x = OutSine(dispTimer, dispMaxTimer, easingScale1, 0);
-			tstColor.w = OutSine(dispTimer, dispMaxTimer, easingColor, 0);
-			tstColor1.w = OutSine(dispTimer, dispMaxTimer, easingColor, 0);
-
-			effectScale.z = effectScale.x;
-			effectScale1.z = effectScale1.x;
-		}
-		else
-		{
-			effectScale = XMFLOAT3(13, 2.f, 13);
-			effectScale1 = XMFLOAT3(16, 2.f, 16);
-			effectAngle = 0;
-			effectAngle1 = 0;
-			dispTimer = 0;
-		}
-#else
-		dispTimer += elapsed_time;
-		tstbox->CalculateTransform();
-		tstbox->SetAngle(tstAngle);
-		tstAngle.y += elapsed_time * DirectX::XMConvertToRadians(720);
-
-		tstbox->SetPosition(tstPos);
-		tstbox->SetScale(tstScale);
-
-		tstbox1->CalculateTransform();
-		tstbox1->SetAngle(tstAngle1);
-		tstAngle1.y += elapsed_time * DirectX::XMConvertToRadians(720);
-
-		tstbox1->SetPosition(tstPos1);
-		tstbox1->SetScale(tstScale1);
-
-		tstScale.x = OutSine(dispTimer, dispMaxTimer, easingScale, 0);
-		tstScale1.x = OutSine(dispTimer, dispMaxTimer, easingScale1, 0);
-		tstColor.w = OutSine(dispTimer, dispMaxTimer, easingColor, 0);
-		tstColor1.w = OutSine(dispTimer, dispMaxTimer, easingColor, 0);
-
-		if (dispTimer > dispMaxTimer)
-		{
-			dispTimer = 0;
-		}
-#endif
-		player->Update(elapsed_time);
-		playerHp->Update(elapsed_time, player->GetObj()->GetMaxHp(), player->GetObj()->GetHp(), 6.f);
-		enemyHp->Update(elapsed_time, bossEnemy->GetObj()->GetMaxHp(), bossEnemy->GetObj()->GetHp(), 6.f);
-		playerSp->Update(elapsed_time, player->GetObj()->GetMaxSp(), player->GetObj()->GetSp(), 6.f);
-
-		CollisionManager::Judge(elapsed_time, *player->GetObj(), *bossEnemy->GetObj(), *tstStage);
+		CollisionManager::Judge(elapsedTime, *player->GetObj(), *bossEnemy->GetObj(), *tstStage);
 		Camera::GetInstance().SetTarget(DirectX::XMFLOAT3(player->GetObj()->GetPosition().x, player->GetObj()->GetHeadPosition().y, player->GetObj()->GetPosition().z));
-		pParticleManager->Update(elapsed_time);
+		pParticleManager->Update(elapsedTime);
 		//カメラ変更
 		if (!Camera::GetInstance().GetFreeFlag())
 		{
@@ -694,16 +623,16 @@ int SceneGame::Update(float elapsed_time)
 		}
 		break;
 	case STATE::CLEAR:
-		bossEnemy->Update(elapsed_time);
+		bossEnemy->Update(elapsedTime);
 		//nlength = { 85,40,85 };
 		Camera::GetInstance().SetCamera(length, Camera::TYPE::CLEAR);
 		//Camera::GetInstance().Updata(elapsed_time);
-		ParticleManager::getInstance()->Update(elapsed_time);
+		ParticleManager::getInstance()->Update(elapsedTime);
 		EffectObj::GetInstance().Update();
 		break;
 	case STATE::OVER:
-		player->Update(elapsed_time);
-		bossEnemy->Update(elapsed_time * 0.2f);
+		player->Update(elapsedTime);
+		bossEnemy->Update(elapsedTime * 0.2f);
 		//length = { 55,-8,55 };
 		Camera::GetInstance().SetTargetAngle(player->GetObj()->GetAngle());
 		Camera::GetInstance().SetCamera(length, Camera::TYPE::OVER);
@@ -712,13 +641,13 @@ int SceneGame::Update(float elapsed_time)
 		break;
 	}
 
-	Camera::GetInstance().Updata(elapsed_time);
+	Camera::GetInstance().Updata(elapsedTime);
 	Camera::GetInstance().CalculateTransforms();
 	Camera::GetInstance().flag = true;
 	pHitAreaRender.CalculateTransform(Camera::GetInstance().GetView(), Camera::GetInstance().GetProjection());
 	return 0;
 }
-void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
+void SceneGame::Render(float elapsedTime, ID3D11DeviceContext* devicecontext)
 {
 	if (!tutorialFlag)
 	{
@@ -849,8 +778,8 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 		if (bossEnemy->GetObj()->GetRAttackFlag())
 		{
 			EfectModelRenderer->Begin(devicecontext, view_projection, VECTOR4(0, -1, -1, 1));
-			EfectModelRenderer->Draw(devicecontext, bossEnemy->GetRAttackObj1()->GetModel(), tstColor);
-			EfectModelRenderer->Draw(devicecontext, bossEnemy->GetRAttackObj2()->GetModel(), tstColor1);
+			EfectModelRenderer->Draw(devicecontext, bossEnemy->GetRAttackObj1()->GetModel(),VECTOR4(0,0,1, bossEnemy->GetEffectColorW1()));
+			EfectModelRenderer->Draw(devicecontext, bossEnemy->GetRAttackObj2()->GetModel(), VECTOR4(0, 0, 1, bossEnemy->GetEffectColorW2()));
 			EfectModelRenderer->End(devicecontext);
 		}
 #else
@@ -879,12 +808,14 @@ void SceneGame::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 	//追加するならframebufferを追加し最終書き込み終わったものを取得framebuffer[1]と同じ手順
 	if (player->GetObj()->GetHitStateFlag())
 	{
-		vignetteEffect->constantBuffer->data.area += 15.f * elapsed_time;
+		float area = vignetteEffect->GetVignetteArea();
+		area += 15.f * elapsedTime;
+		vignetteEffect->SetVignetteArea(area);
 		vignetteEffect->Render(devicecontext, frameBuffer[1]->GetRenderTargetShaderResourceView().Get());
 	}
 	else
 	{
-		vignetteEffect->constantBuffer->data.area = 1.5f;
+		vignetteEffect->SetVignetteArea(1.5f);
 		playerHpMax->Render(devicecontext, frameBuffer[1]->GetRenderTargetShaderResourceView().Get(), 0, 0, 1920, 1080, 0, 0, 1920, 1080, 0, 1, 1, 1, 1);
 	}
 	/*vignetteEffect->Render(devicecontext, frameBuffer[0]->GetRenderTargetShaderResourceView().Get());*/
