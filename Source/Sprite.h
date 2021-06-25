@@ -6,6 +6,7 @@
 #include "ShaderEX.h"
 #include <memory>
 #include "constant_buffer.h"
+
 class Sprite {
 public:
 

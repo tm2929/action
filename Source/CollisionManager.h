@@ -13,5 +13,6 @@ public:
 	void TargetJudge(float elapsed_time, PlayerObj& p, std::vector<EnemyObj>& e);
 
 	static void PlayerStageJudge(PlayerObj& player,Stage& stage);
+	static void EnemyStageJudge(EnemyObj& enemy, Stage& stage);
 	static void CameraStageJudge(Stage& stage);
 };

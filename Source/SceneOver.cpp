@@ -10,6 +10,24 @@
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
 #endif
 
+bool SceneOver::IsNowLoading()
+{
+	if (loading_thread && loading_mutex.try_lock())
+	{
+		loading_mutex.unlock();
+		return false;
+	}
+	return true;
+}
+
+void SceneOver::EndLoading()
+{
+	if (loading_thread && loading_thread->joinable())
+	{
+		loading_thread->join();
+	}
+}
+
 SceneOver::SceneOver(ID3D11Device* device, HWND hwnd)
 {
 	loading_thread = std::make_unique<std::thread>([&](ID3D11Device* device)

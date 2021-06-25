@@ -344,10 +344,6 @@ void Player::UpdateWaitState(float elapsedTime)
 	{
 		SetRunState();
 	}
-	if (KeyInput::KeyTrigger() & KEY_C || input::ButtonRisingState(0, input::PadLabel::Y))
-	{
-		SetKickState();
-	}
 	if (KeyInput::KeyTrigger() & KEY_Z || input::ButtonRisingState(0, input::PadLabel::X))
 	{
 		SetAttackState();
@@ -437,10 +433,7 @@ void Player::UpdateRunState(float elapsedTime)
 	{
 		SetRushState();
 	}
-	if (KeyInput::KeyTrigger() & KEY_C || input::ButtonRisingState(0, input::PadLabel::Y))
-	{
-		SetKickState();
-	}
+	
 	if (KeyInput::KeyTrigger() & KEY_Z || input::ButtonRisingState(0, input::PadLabel::X))
 	{
 		if (len <= 20) SetAttackState();
@@ -818,18 +811,17 @@ void Player::UpdateAttackState(float elapsedTime)
 			action = ACTION::FIRSTEND;
 			//animSpeed = 1.0f;
 		}
+		if (KeyInput::KeyTrigger() & KEY_X || input::ButtonRisingState(0, input::PadLabel::A)) //攻撃時、戻りモーション時のみ加速(回避)できる
+		{
+			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
+			SetAccelState();
+		}
 		break;
 	case ACTION::FIRSTEND: //戻りモーション
 		if (KeyInput::KeyTrigger() & KEY_X || input::ButtonRisingState(0, input::PadLabel::A)) //攻撃時、戻りモーション時のみ加速(回避)できる
 		{
 			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
 			SetAccelState();
-		}
-		if (KeyInput::KeyTrigger() & KEY_C || input::ButtonRisingState(0, input::PadLabel::Y))
-		{
-			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
-			SetKickState();
-			return;
 		}
 		if (playerObj->GetModel()->GetBlendFlag() && (KeyInput::KeyTrigger() & KEY_Z || input::ButtonRisingState(0, input::PadLabel::X)))
 		{
@@ -878,18 +870,17 @@ void Player::UpdateAttackState(float elapsedTime)
 			action = ACTION::SECONDEND;
 			//animSpeed = 1.0f;
 		}
+		if (KeyInput::KeyTrigger() & KEY_X || input::ButtonRisingState(0, input::PadLabel::A)) //攻撃時、戻りモーション時のみ加速(回避)できる
+		{
+			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
+			SetAccelState();
+		}
 		break;
 	case ACTION::SECONDEND://戻りモーション
 		if (KeyInput::KeyTrigger() & KEY_X || input::ButtonRisingState(0, input::PadLabel::A)) //攻撃時、戻りモーション時のみ加速(回避)できる
 		{
 			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
 			SetAccelState();
-		}
-		if (KeyInput::KeyTrigger() & KEY_C || input::ButtonRisingState(0, input::PadLabel::Y))
-		{
-			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
-			SetKickState();
-			return;
 		}
 		if (count > hitData.attackTime && (KeyInput::KeyTrigger() & KEY_Z || input::ButtonRisingState(0, input::PadLabel::X)))
 		{
@@ -923,18 +914,13 @@ void Player::UpdateAttackState(float elapsedTime)
 			action = ACTION::THIRDEND;
 			//animSpeed = 1.0f;
 		}
+
 		break;
 	case ACTION::THIRDEND://戻りモーション
 		if (KeyInput::KeyTrigger() & KEY_X || input::ButtonRisingState(0, input::PadLabel::A)) //攻撃時、戻りモーション時のみ加速(回避)できる
 		{
 			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
 			SetAccelState();
-		}
-		if (KeyInput::KeyTrigger() & KEY_C || input::ButtonRisingState(0, input::PadLabel::Y))
-		{
-			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
-			SetKickState();
-			return;
 		}
 		if (!playerObj->GetModel()->GetBlendFlag())
 		{

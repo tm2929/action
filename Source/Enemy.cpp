@@ -130,6 +130,8 @@ void Enemy::Update(float elapsedTime)
 
 	enemyObj->CalculateTransform();
 	enemyObj->HitAttackTransform();
+	rAttackObj1->CalculateTransform();
+	rAttackObj2->CalculateTransform();
 	//当たり判定更新
 	enemyObj->HitAreaTransform();
 	enemyObj->SetFront(DirectX::XMFLOAT3(sinf(angle.y), 0, cosf(angle.y)));
@@ -838,18 +840,16 @@ void Enemy::UpdateShortAttackState(float elapsedTime)
 		static float effectAngle1, effectAngle2;
 		static DirectX::XMFLOAT3 effectScale1;
 		static DirectX::XMFLOAT3 effectScale2;
+		rAttackObj1->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x, enemyObj->GetPosition().y + 8, enemyObj->GetPosition().z));
+		rAttackObj2->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x, enemyObj->GetPosition().y, enemyObj->GetPosition().z));
 		if (enemyObj->GetRAttackFlag())
 		{
 			dispTimer += elapsedTime;
-			rAttackObj1->CalculateTransform();
 			rAttackObj1->SetAngle(DirectX::XMFLOAT3(0, effectAngle1, 0));
 			effectAngle1 += elapsedTime * DirectX::XMConvertToRadians(720);
-			rAttackObj1->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x, enemyObj->GetPosition().y + 8, enemyObj->GetPosition().z));
 			rAttackObj1->SetScale(effectScale1);
-			rAttackObj2->CalculateTransform();
 			rAttackObj2->SetAngle(DirectX::XMFLOAT3(0, effectAngle2, 0));
 			effectAngle2 += elapsedTime * DirectX::XMConvertToRadians(720);
-			rAttackObj2->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x, enemyObj->GetPosition().y, enemyObj->GetPosition().z));
 			rAttackObj2->SetScale(effectScale2);
 			effectScale1.x = OutSine(dispTimer, dispMaxTimer, easingScale1, 0);
 			effectScale2.x = OutSine(dispTimer, dispMaxTimer, easingScale2, 0);
@@ -857,6 +857,8 @@ void Enemy::UpdateShortAttackState(float elapsedTime)
 			effectColorW2 = OutSine(dispTimer, dispMaxTimer, easingColor, 0);
 			effectScale1.z = effectScale1.x;
 			effectScale2.z = effectScale2.x;
+			//rAttackObj1->CalculateTransform();
+			//rAttackObj2->CalculateTransform();
 		}
 		else
 		{
@@ -1066,12 +1068,13 @@ void Enemy::RAttack(float elapsedTime)//回転攻撃
 			animSpeed = 2.0f;//攻撃速度を上げる
 
 			enemyObj->SetAttackFlag(true);
-			enemyObj->SetRAttackFlag(true);
 			enemyObj->SetHighAttackFlag(true);
 
 		}
 		break;
 	case  ACTION::SECOND:
+		waiteTime += elapsedTime;
+		if(waiteTime>0.1f)enemyObj->SetRAttackFlag(true);
 		if (!enemyObj->GetAnimContinue())//終われば元に戻るモーションに
 		{
 			animSpeed = 1.0f;

@@ -19,6 +19,24 @@
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wparam, LPARAM lparam);
 #endif
 
+bool SceneGame::IsNowLoading()
+{
+		if (loading_thread && loading_mutex.try_lock())
+		{
+			loading_mutex.unlock();
+			return false;
+		}
+		return true;
+}
+
+void SceneGame::EndLoading()
+{
+	if (loading_thread && loading_thread->joinable())
+	{
+		loading_thread->join();
+	}
+}
+
 void SceneGame::LightInit(ID3D11Device* device)
 {
 	Camera& camera = Camera::GetInstance();
@@ -288,10 +306,10 @@ void SceneGame::Imgui()
 		{
 			// エフェクトの再生
 
-			EffectObj::GetInstance().SetScale(EffectObj::TYPE::TST, tstScale);
-			EffectObj::GetInstance().SetColor(EffectObj::TYPE::TST, tstColor);
-			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::TST, tstPos);
-			EffectObj::GetInstance().Play(EffectObj::TYPE::TST);
+			EffectObj::GetInstance().SetScale(EffectObj::TYPE::SUKILL, tstScale);
+			EffectObj::GetInstance().SetColor(EffectObj::TYPE::SUKILL, tstColor);
+			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::SUKILL, player->GetTrajectoryStartPosition());
+			EffectObj::GetInstance().Play(EffectObj::TYPE::SUKILL);
 			//e.Play(EffectObj::TYPE::BLACK););
 		}
 		if (ImGui::Button("stopeffect"))

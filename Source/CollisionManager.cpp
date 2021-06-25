@@ -7,7 +7,7 @@ void CollisionManager::Judge(float elapsed_time, PlayerObj& player, EnemyObj& en
 {
 	//player stage
 	PlayerStageJudge(player, stage);
-
+	EnemyStageJudge(enemy, stage);
 	//ÉJÉÅÉâ stage
 	CameraStageJudge(stage);
 
@@ -319,6 +319,84 @@ void CollisionManager::PlayerStageJudge(PlayerObj& player, Stage& stage)
 	else 	if (Collision::isHitAABB(haka2, playerCube))
 	{
 		player.SetPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, haka2.min.z - playerArea.area));
+	}
+}
+
+void CollisionManager::EnemyStageJudge(EnemyObj& enemy, Stage& stage)
+{
+	//stage
+	AABB left1 = stage.GetLeft1Cube();
+	AABB left2 = stage.GetLeft2Cube();
+	AABB right1 = stage.GetRight1Cube();
+	AABB right2 = stage.GetRight2Cube();
+	AABB front1 = stage.GetFront1Cube();
+	AABB front2 = stage.GetFront2Cube();
+	AABB haka1 = stage.GetHaka1Cube();
+	AABB haka2 = stage.GetHaka2Cube();
+	AABB back1 = stage.GetBack1Cube();
+	AABB back2 = stage.GetBack2Cube();
+	//camera
+	AABB enemyCube;
+	enemyCube.min = enemy.GetPosition();
+	enemyCube.max = enemy.GetPosition();
+
+	float yLeng = (enemy.GetHitArea().max.y - enemy.GetHitArea().min.y);
+	enemyCube.min.x -= enemy.GetHitArea().area;
+	enemyCube.min.y -= yLeng;
+	enemyCube.min.z -= enemy.GetHitArea().area;
+
+	enemyCube.max.x += enemy.GetHitArea().area;
+	enemyCube.max.y += yLeng;
+	enemyCube.max.z += enemy.GetHitArea().area;
+	Cylinder enemyArea = enemy.GetHitArea();
+
+	//ç∂
+	if (Collision::isHitAABB(left1, enemyCube))
+	{
+		enemy.SetPosition(DirectX::XMFLOAT3(left1.min.x - enemyArea.area, enemy.GetPosition().y, enemy.GetPosition().z));
+	}
+	else if (Collision::isHitAABB(left2, enemyCube))
+	{
+		enemy.SetPosition(DirectX::XMFLOAT3(left2.min.x - enemyArea.area, enemy.GetPosition().y, enemy.GetPosition().z));
+	}
+	if (Collision::isHitAABB(left1, enemyCube))
+	{
+		enemy.SetPosition(DirectX::XMFLOAT3(left1.min.x - enemyArea.area, enemy.GetPosition().y, enemy.GetPosition().z));
+	}
+	//âE
+	if (Collision::isHitAABB(right1, enemyCube))
+	{
+		enemy.SetPosition(DirectX::XMFLOAT3(right1.max.x + enemyArea.area, enemy.GetPosition().y, enemy.GetPosition().z));
+	}
+	else if (Collision::isHitAABB(right2, enemyCube))
+	{
+		enemy.SetPosition(DirectX::XMFLOAT3(right2.max.x + enemyArea.area, enemy.GetPosition().y, enemy.GetPosition().z));
+	}
+	//ê≥ñ 
+	if (Collision::isHitAABB(front1, enemyCube))
+	{
+		enemy.SetPosition(DirectX::XMFLOAT3(enemy.GetPosition().x, enemy.GetPosition().y, front1.max.z + enemyArea.area));
+	}
+	else if (Collision::isHitAABB(front2, enemyCube))
+	{
+		enemy.SetPosition(DirectX::XMFLOAT3(enemy.GetPosition().x, enemy.GetPosition().y, front2.max.z + enemyArea.area));
+	}
+	else if (Collision::isHitAABB(haka1, enemyCube))
+	{
+		enemy.SetPosition(DirectX::XMFLOAT3(enemy.GetPosition().x, enemy.GetPosition().y, haka1.max.z + enemyArea.area));
+	}
+	//å„ÇÎ
+	if (Collision::isHitAABB(back1, enemyCube))
+	{
+		enemy.SetPosition(DirectX::XMFLOAT3(enemy.GetPosition().x, enemy.GetPosition().y, back1.min.z - enemyArea.area));
+	}
+	else 	if (Collision::isHitAABB(back2, enemyCube))
+	{
+		enemy.SetPosition(DirectX::XMFLOAT3(enemy.GetPosition().x, enemy.GetPosition().y, back2.min.z - enemyArea.area));
+	}
+	else 	if (Collision::isHitAABB(haka2, enemyCube))
+	{
+		enemy.SetPosition(DirectX::XMFLOAT3(enemy.GetPosition().x, enemy.GetPosition().y, haka2.min.z - enemyArea.area));
 	}
 }
 

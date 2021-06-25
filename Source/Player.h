@@ -3,8 +3,8 @@
 #include "PlayerData.h"
 #include "Weapon.h"
 #include "Trajectory.h"
-#define BLENDNORMAL 5.0f
-#define BLENDATTACK   15.0f //çUåÇÇ©ÇÁë“ã@Ç…ñﬂÇÈä‘
+#define BLENDNORMAL 0.0f
+#define BLENDATTACK   0.0f //çUåÇÇ©ÇÁë“ã@Ç…ñﬂÇÈä‘
 class Player
 {
 public:
@@ -147,6 +147,7 @@ private:
 		DIE,
 		ATTACK4,
 		KICK,
+		SUKILL,
 		END
 	};
 #endif 

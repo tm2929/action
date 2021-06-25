@@ -22,6 +22,7 @@ public:
 		SLASHING,		//éaåÇìIÇ»
 		BRIBIRI,
 		CIRCLE,		//ñÇñ@êw
+		SUKILL,
 		END
 	};
 	void Play(TYPE i);

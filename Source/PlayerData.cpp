@@ -51,8 +51,8 @@ void PlayerEnergyData::Init()
 	sp = 100;
 	maxSp = 100;
 	pulsSp = 15.f;
-	dashSp = 30.0f;
-	accelSp = 20.0f;
+	dashSp = 40.0f;
+	accelSp = 40.0f;
 	attackSp[0] = 2.f;
 	attackSp[1] = 5.f;
 	attackSp[2] = 5.f;
