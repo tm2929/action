@@ -22,12 +22,17 @@ void EffectObj::Init(ID3D11Device* device)
 
 	effect[static_cast<int>(TYPE::THUNDER)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/THUNDER.efk");
 	effect[static_cast<int>(TYPE::BLACKMIST)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/BLACKMIST.efk");
-	effect[static_cast<int>(TYPE::TST)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/run.efk");
+	//effect[static_cast<int>(TYPE::TST)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/run.efk");
 	effect[static_cast<int>(TYPE::CHARGE)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/CHARGE.efk");
 	effect[static_cast<int>(TYPE::SLASHING)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/huriage.efk");
+	effect[static_cast<int>(TYPE::RUN)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/run.efk");
 	effect[static_cast<int>(TYPE::BRIBIRI)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/biribiri.efk");
 	effect[static_cast<int>(TYPE::CIRCLE)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/mahouzin.efk");
-	effect[static_cast<int>(TYPE::SUKILL)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/tst111.efk");
+	effect[static_cast<int>(TYPE::PLAYERCHARGE)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/sukillup.efk");
+	effect[static_cast<int>(TYPE::TST)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/2dbiri.efk");
+	effect[static_cast<int>(TYPE::MPMAX)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/tst1121.efk");
+	effect[static_cast<int>(TYPE::HEAL)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/Heal.efk");
+	effect[static_cast<int>(TYPE::SUKILL)] = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Data/Effect/fires.efk");
 	//e = Effekseer::Effect::Create(manager, (EFK_CHAR*)L"Pierre01/tst.efk");
 
 	for (int i = 0; i < num; i++)

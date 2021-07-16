@@ -57,6 +57,7 @@ Enemy::Enemy(std::shared_ptr<ModelResource> resource)
 	speedData.Init();
 	thunderData.Init();
 	shotData.Init();
+	rAttackData.Init();
 
 	skull = std::make_shared<Character>(pLoadModel.GetModelResource("Skull"));
 	skull->SetScale(shotData.scale);
@@ -128,16 +129,14 @@ void Enemy::Update(float elapsedTime)
 		enemyObj->SetHitAreaLeng(hitData.hitLength);
 	}
 
-	enemyObj->CalculateTransform();
+	//enemyObj->CalculateTransform();
 	enemyObj->HitAttackTransform();
 	rAttackObj1->CalculateTransform();
 	rAttackObj2->CalculateTransform();
 	//当たり判定更新
 	enemyObj->HitAreaTransform();
 	enemyObj->SetFront(DirectX::XMFLOAT3(sinf(angle.y), 0, cosf(angle.y)));
-	//カメラターゲット相手にエネミーをセット
-	Camera::GetInstance().SetEnemy(DirectX::XMFLOAT3(enemyObj->GetPosition().x, enemyObj->GetHeadPosition().y, enemyObj->GetPosition().z));
-
+	
 	//shot当たり判定
 
 	//enemyObj->SetShotAttackFlag(shotData.exist);
@@ -170,13 +169,13 @@ void Enemy::Update(float elapsedTime)
 	}
 	//shot当たり判定
 	if (enemyObj->GetShotAttackFlag())
-		pHitAreaRender.SetHitSphere(enemyObj->GetShotSphere().position, enemyObj->GetShotSphere().area, color[0]);
+		HitAreaRnder::GetInctance().SetHitSphere(enemyObj->GetShotSphere().position, enemyObj->GetShotSphere().area, color[0]);
 	//雷当たり判定
-	pHitAreaRender.SetHitCylinder(enemyObj->GetThunderCylinder().min, enemyObj->GetThunderCylinder().max, enemyObj->GetThunderCylinder().area, color[0]);
+	HitAreaRnder::GetInctance().SetHitCylinder(enemyObj->GetThunderCylinder().min, enemyObj->GetThunderCylinder().max, enemyObj->GetThunderCylinder().area, color[0]);
 	//体当たり判定
-	pHitAreaRender.SetHitCylinder(enemyObj->GetHitArea().min, enemyObj->GetHitArea().max, enemyObj->GetHitArea().area, color[0]);
+	HitAreaRnder::GetInctance().SetHitCylinder(enemyObj->GetHitArea().min, enemyObj->GetHitArea().max, enemyObj->GetHitArea().area, color[0]);
 	//攻撃用当たり判定
-	pHitAreaRender.SetHitSphere(enemyObj->GetHitSphere().position, enemyObj->GetHitSphere().area, color[0]);
+	HitAreaRnder::GetInctance().SetHitSphere(enemyObj->GetHitSphere().position, enemyObj->GetHitSphere().area, color[0]);
 	EffectObj::GetInstance().Plays(elapsedTime, EffectObj::TYPE::SLASHING, 6, DirectX::XMFLOAT3(sinf(enemyObj->GetAngle().y) * 4, 0, cosf(enemyObj->GetAngle().y) * 4), 0.1f);
 	switch (state)
 	{
@@ -207,11 +206,8 @@ void Enemy::Update(float elapsedTime)
 	case STATE::KNOCKBACK:
 		UpdateKnockBackState(elapsedTime);
 		break;
-		/*case STATE::TELEPORTATION:
-			UpdateTeleportationState(elapsedTime);
-			break;*/
-	case STATE::FALL:
-		UpdateFallState(elapsedTime);
+	case STATE::PLAYERSUKILLDOWN:
+		UpdatePlayerSukillDownState(elapsedTime);
 		break;
 	case STATE::DOWN:
 		UpdateDownState(elapsedTime);
@@ -230,6 +226,10 @@ void Enemy::Update(float elapsedTime)
 		{
 			SetDownState();
 		}
+	}
+	if (Camera::GetInstance().GetSukillEnemyFocusFlag())
+	{
+		SetPlayerSukillDownState();
 	}
 	if (animStopFlag)
 	{
@@ -286,6 +286,17 @@ void Enemy::Imgui()
 		ImGui::SliderFloat("angleTime", &attackData.angleTime, 0, 1);
 		ImGui::SliderFloat("rushTime", &attackData.rushTime, 0, 1);
 		ImGui::InputFloat("chargeTime", &attackData.chargeTime, 1.0f);
+	}
+	//rAttack
+	if (ImGui::CollapsingHeader("RATTACK"))
+	{
+		ImGui::InputFloat("rattackDispMaxTimer", &rAttackData.dispMaxTimer, 0.1f);
+		ImGui::Text("effectScale1.x%f", rAttackData.effectScale1.x);
+		ImGui::Text("rAttackObj1.x%f", rAttackObj1->GetScale().x);
+
+		ImGui::InputFloat("easingScale1", &rAttackData.easingScale1, 0.1f);
+		ImGui::InputFloat("easingScale2", &rAttackData.easingScale2, 0.1f);
+		ImGui::InputFloat("easingColor", &rAttackData.easingColor, 0.1f);
 	}
 	//SHOT
 	if (ImGui::CollapsingHeader("SHOT"))
@@ -463,16 +474,17 @@ void Enemy::UpdateFirstState(float elapsedTime)
 	}
 }
 
-void Enemy::SetFallState()
-{
-	animNo = static_cast<int>(ANIM::HANDUP1);
-	enemyObj->SetAnim(animNo, false);
-	state = STATE::FALL;
-}
 
-void Enemy::UpdateFallState(float elapsedTime)
-{
-}
+//void Enemy::SetFallState()
+//{
+//	animNo = static_cast<int>(ANIM::HANDUP1);
+//	enemyObj->SetAnim(animNo, false);
+//	state = STATE::FALL;
+//}
+//
+//void Enemy::UpdateFallState(float elapsedTime)
+//{
+//}
 
 void Enemy::SetDownState()
 {
@@ -480,13 +492,14 @@ void Enemy::SetDownState()
 	{
 		enemyObj->SetAttackFlag(false);
 	}
+	animSpeed = 1.0f;
 	animNo = static_cast<int>(ANIM::DAMAGE1);
 	enemyObj->SetAnim(animNo, false);
 	state = STATE::DOWN;
 	waiteTime = 0;
 	pos = enemyObj->GetPosition();
 	enemyObj->SetKnockBackFlag(false);
-	enemyObj->SetKnockBackTime(3.0f);
+	enemyObj->SetKnockBackTime(hitData.downTime);
 }
 
 void Enemy::UpdateDownState(float elapsedTime)
@@ -506,6 +519,37 @@ void Enemy::UpdateDownState(float elapsedTime)
 	}
 }
 
+void Enemy::SetPlayerSukillDownState()
+{
+	if (enemyObj->GetAttackFlag())	enemyObj->SetAttackFlag(false);
+	pos = enemyObj->GetPosition();
+	if (pos.y > 0)
+	{
+		pos.y = 0;
+		enemyObj->SetPosition(pos);
+	}
+	animSpeed = 1.0f;
+	//animNo = static_cast<int>(ANIM::DAMAGE1);
+	//enemyObj->SetAnim(animNo, false);
+	state = STATE::PLAYERSUKILLDOWN;
+	waiteTime = 0;
+	enemyObj->SetKnockBackFlag(false);
+	enemyObj->SetKnockBackTime(hitData.sukillDownTime);
+
+	EffectStop();
+
+}
+
+void Enemy::UpdatePlayerSukillDownState(float elapsedTime)
+{
+
+	waiteTime += elapsedTime;
+	if (waiteTime > enemyObj->GetKnockBackTime())
+	{
+		SetChoiceState();
+	}
+
+}
 void Enemy::SetDeathState()
 {
 	animNo = static_cast<int>(ANIM::DAMAGE1);
@@ -519,7 +563,7 @@ void Enemy::UpdateDeathState(float elapsedTime)
 {
 	if (animTime > 0.5f)
 	{
-		pFadeOut.MoveStart();
+		FadeOut::GetInctence().MoveStart();
 	}
 }
 
@@ -598,425 +642,371 @@ void Enemy::UpdateChoiceState(float elapsedTime)
 		SetLongAttackState();*/
 	}
 #endif
-	}
 }
-//待機
-void Enemy::SetWaitState()
-{
-	state = STATE::WAIT;
-	animNo = static_cast<int>(ANIM::WAIT);
-	enemyObj->SetAnim(animNo, true);
-	waiteTime = 0;
-	attackMoveFlag = false;
-	animSpeed = 3.f;
-}
-void Enemy::UpdateWaitState(float elapsedTime)
-{
-	if (choiceData.firstFlag)
-	{
-		SetFirstState();
-		animSpeed = 1.f;
 	}
-	if (enemyObj->GetKnockBackFlag())
+	//待機
+	void Enemy::SetWaitState()
 	{
-		SetKnockBackState();
+		state = STATE::WAIT;
+		animNo = static_cast<int>(ANIM::WAIT);
+		enemyObj->SetAnim(animNo, true);
+		waiteTime = 0;
+		attackMoveFlag = false;
+		animSpeed = 3.f;
 	}
-	waiteTime += elapsedTime;
-
-	if (waiteTime > choiceData.waiteTime && !choiceData.firstFlag)
+	void Enemy::UpdateWaitState(float elapsedTime)
 	{
-		SetChoiceState();
-		animSpeed = 1.f;
-	}
-}
-
-void Enemy::SetSideStepState()
-{
-	state = STATE::SIDE;
-	animNo = static_cast<int>(ANIM::RUN);
-	enemyObj->SetAnim(animNo, true);
-	enemyObj->SetAccelSpeed(speedData.runSpeed);
-	waiteTime = 0;
-	number = IntRandom(0, 1);
-	pos = enemyObj->GetPosition();//ポジション
-	attackMoveFlag = false;
-	angle = enemyObj->GetAngle();
-}
-
-void Enemy::UpdatSideStepState(float elapsedTime)
-{
-	CalculateDotCross();
-	//補完用
-	waiteTime += elapsedTime;
-	if (waiteTime < choiceData.time)
-	{
-		DirectX::XMFLOAT3 toPlayerAngle;
-		DirectX::XMStoreFloat3(&toPlayerAngle, vec);
-		//向き変更
-		if (acosf(dot) > DirectX::XMConvertToRadians(5))
+		if (choiceData.firstFlag)
 		{
-			if (cross.y < 0)
-				angle.y -= DirectX::XMConvertToRadians(360) * elapsedTime;//acosfでシータ（角度）がでる　
+			SetFirstState();
+			animSpeed = 1.f;
+		}
+		if (enemyObj->GetKnockBackFlag())
+		{
+			SetKnockBackState();
+			animSpeed = 1.f;
+		}
+		waiteTime += elapsedTime;
+
+		if (waiteTime > choiceData.waiteTime && !choiceData.firstFlag)
+		{
+			SetChoiceState();
+			animSpeed = 1.f;
+		}
+	}
+
+	void Enemy::SetSideStepState()
+	{
+		state = STATE::SIDE;
+		animNo = static_cast<int>(ANIM::RUN);
+		enemyObj->SetAnim(animNo, true);
+		enemyObj->SetAccelSpeed(speedData.runSpeed);
+		waiteTime = 0;
+		number = IntRandom(0, 1);
+		pos = enemyObj->GetPosition();//ポジション
+		attackMoveFlag = false;
+		angle = enemyObj->GetAngle();
+	}
+
+	void Enemy::UpdatSideStepState(float elapsedTime)
+	{
+		CalculateDotCross();
+		//補完用
+		waiteTime += elapsedTime;
+		if (waiteTime < choiceData.time)
+		{
+			DirectX::XMFLOAT3 toPlayerAngle;
+			DirectX::XMStoreFloat3(&toPlayerAngle, vec);
+			//向き変更
+			if (acosf(dot) > DirectX::XMConvertToRadians(5))
+			{
+				if (cross.y < 0)
+					angle.y -= DirectX::XMConvertToRadians(360) * elapsedTime;//acosfでシータ（角度）がでる　
+				else
+					angle.y += DirectX::XMConvertToRadians(360) * elapsedTime;
+			}
 			else
-				angle.y += DirectX::XMConvertToRadians(360) * elapsedTime;
-		}
-		else
-		{
-			//DirectX::XMConvertToRadians(num)より小さくなった場合ぶれないよに
-			angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
-		}
-		enemyObj->SetAngle(angle);
+			{
+				//DirectX::XMConvertToRadians(num)より小さくなった場合ぶれないよに
+				angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
+			}
+			enemyObj->SetAngle(angle);
 
-		DirectX::XMFLOAT3 right;
-		DirectX::XMFLOAT3 n = DirectX::XMFLOAT3(sinf(angle.y), 0, cosf(angle.y));//前ベクトル
-		DirectX::XMVECTOR vn = DirectX::XMLoadFloat3(&n);
-		DirectX::XMVECTOR up = { 0,1,0 };//上ベクトル
-		DirectX::XMVECTOR vec = DirectX::XMVector3Cross(vn, up);
+			DirectX::XMFLOAT3 right;
+			DirectX::XMFLOAT3 n = DirectX::XMFLOAT3(sinf(angle.y), 0, cosf(angle.y));//前ベクトル
+			DirectX::XMVECTOR vn = DirectX::XMLoadFloat3(&n);
+			DirectX::XMVECTOR up = { 0,1,0 };//上ベクトル
+			DirectX::XMVECTOR vec = DirectX::XMVector3Cross(vn, up);
 
-		DirectX::XMStoreFloat3(&right, vec);
-		if (number == 0)
-		{
-			pos.x += right.x * enemyObj->GetAccelSpeed() * elapsedTime;
-			pos.z += right.z * enemyObj->GetAccelSpeed() * elapsedTime;
-		}
-		else
-		{
-			pos.x -= right.x * enemyObj->GetAccelSpeed() * elapsedTime;
-			pos.z -= right.z * enemyObj->GetAccelSpeed() * elapsedTime;
-		}
-		if (waiteTime > choiceData.time * 0.5f)
-		{
-			enemyObj->SetAccelSpeed(30.f);
-		}
-		enemyObj->SetPosition(pos);
-	}
-	else
-	{
-		SetChoiceState();
-	}
-}
-void Enemy::SetRunState()//ゆっくりとプレイヤーに近付く
-{
-	state = STATE::RUN;
-	animNo = static_cast<int>(ANIM::RUN);
-	enemyObj->SetAnim(animNo, true);
-	enemyObj->SetRunSpeed(speedData.runSpeed);
-	waiteTime = 0;
-	pos = enemyObj->GetPosition();
-	attackMoveFlag = false;
-}
-void Enemy::UpdateRunState(float elapsedTime)
-{
-	CalculateLength();
-	CalculateDotCross();
-	waiteTime += elapsedTime;
-	if (waiteTime < choiceData.time)
-	{
-		DirectX::XMFLOAT3 toPlayerAngle;
-		DirectX::XMStoreFloat3(&toPlayerAngle, vec);
-		//向き変更
-
-		if (acosf(dot) > DirectX::XMConvertToRadians(5))
-		{
-			if (cross.y < 0)
-				angle.y -= DirectX::XMConvertToRadians(360) * elapsedTime;//acosfでシータ（角度）がでる　
+			DirectX::XMStoreFloat3(&right, vec);
+			if (number == 0)
+			{
+				pos.x += right.x * enemyObj->GetAccelSpeed() * elapsedTime;
+				pos.z += right.z * enemyObj->GetAccelSpeed() * elapsedTime;
+			}
 			else
-				angle.y += DirectX::XMConvertToRadians(360) * elapsedTime;
-		}
-		else
-		{
-			//DirectX::XMConvertToRadians(num)より小さくなった場合ぶれないよに
-			angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
-		}
-		enemyObj->SetAngle(angle);
-		//移動
-		if (len > 20) //playerとの距離が20より大きい場合のみplayerのほうへ移動
-		{
-			pos.x += sinf(angle.y) * enemyObj->GetRunSpeed() * elapsedTime;
-			pos.z += cosf(angle.y) * enemyObj->GetRunSpeed() * elapsedTime;
+			{
+				pos.x -= right.x * enemyObj->GetAccelSpeed() * elapsedTime;
+				pos.z -= right.z * enemyObj->GetAccelSpeed() * elapsedTime;
+			}
+			if (waiteTime > choiceData.time * 0.5f)
+			{
+				enemyObj->SetAccelSpeed(30.f);
+			}
 			enemyObj->SetPosition(pos);
 		}
 		else
 		{
 			SetChoiceState();
 		}
-		if (waiteTime > choiceData.time * 0.5f)
-		{
-			enemyObj->SetRunSpeed(30.f);
-		}
 	}
-	else
+	void Enemy::SetRunState()//ゆっくりとプレイヤーに近付く
 	{
-		SetChoiceState();
+		state = STATE::RUN;
+		animNo = static_cast<int>(ANIM::RUN);
+		enemyObj->SetAnim(animNo, true);
+		enemyObj->SetRunSpeed(speedData.runSpeed);
+		waiteTime = 0;
+		pos = enemyObj->GetPosition();
+		attackMoveFlag = false;
 	}
-}
-
-void Enemy::SetBackStepState()
-{
-	state = STATE::BACK;
-	animNo = static_cast<int>(ANIM::RUN);
-	enemyObj->SetAccelSpeed(speedData.runSpeed);
-	enemyObj->SetAnim(animNo, true);
-	pos = enemyObj->GetPosition();
-	attackMoveFlag = false;
-}
-
-void Enemy::UpdateBackStepState(float elapsedTime)
-{
-	CalculateLength();
-	CalculateDotCross();
-	waiteTime += elapsedTime;
-	if (waiteTime < choiceData.time)
+	void Enemy::UpdateRunState(float elapsedTime)
 	{
-		DirectX::XMFLOAT3 toPlayerAngle;
-		DirectX::XMStoreFloat3(&toPlayerAngle, vec);
-		//向き変更
-		if (acosf(dot) > DirectX::XMConvertToRadians(5))
-		{
-			if (cross.y < 0) angle.y -= DirectX::XMConvertToRadians(180) * elapsedTime;//acosfでシータ（角度）がでる　
-			else angle.y += DirectX::XMConvertToRadians(180) * elapsedTime;
-		}
-		else angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
-
-		enemyObj->SetAngle(angle);
-		//移動
-		pos.x -= sinf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
-		pos.z -= cosf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
-		enemyObj->SetPosition(pos);
-	}
-	else SetChoiceState();
-}
-
-void Enemy::SetShortAttackState()
-{
-	attackMoveFlag = true;//攻撃ステートに入った
-	if (number == SHORTATTACK::SATTACK)
-	{
-		animNo = static_cast<int>(ANIM::SATTACK);
-		enemyObj->SetAnim(animNo, false);
-		enemyObj->SetAccelSpeed(100.f);
-		attackData.angleTime = 0.6f;
-		attackData.chargeTime = 0.4f;
-
-	}
-	if (number == SHORTATTACK::RATTACK)
-	{
-		animNo = static_cast<int>(ANIM::RATTACK1);
-		enemyObj->SetAnim(animNo, false);
-
-		attackData.chargeTime = 1.0f;
-	}
-	if (number == SHORTATTACK::UATTACK)
-	{
-		//チャージエフェクト
-		EffectObj::GetInstance().SetScale(EffectObj::TYPE::CHARGE, DirectX::XMFLOAT3(10, 10, 10));
-		EffectObj::GetInstance().Play(EffectObj::TYPE::CHARGE);
-
-		animNo = static_cast<int>(ANIM::UATTACK);
-		enemyObj->SetAnim(animNo, false);
-	}
-	//初期化
-	state = STATE::SHORTATTACK;
-	waiteTime = 0;
-	actionState = ACTION::FIRST;
-	animSpeed = 1.0f;
-	angle = enemyObj->GetAngle();
-	enemyObj->SetDamageFlag(false);
-	enemyObj->SetRAttackFlag(false);
-	enemyObj->SetHighAttackFlag(false);
-}
-
-void Enemy::UpdateShortAttackState(float elapsedTime)
-{
-	EffectObj::GetInstance().SetPosition(EffectObj::TYPE::CHARGE, enemyObj->GetHitSphere().position);
-	if (number == 0)
-	{
-		SAttack(elapsedTime);
-	}
-	if (number == 1)
-	{
-		static float dispTimer, dispMaxTimer;
-		dispMaxTimer = 0.5f;
-		static float effectAngle1, effectAngle2;
-		static DirectX::XMFLOAT3 effectScale1;
-		static DirectX::XMFLOAT3 effectScale2;
-		rAttackObj1->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x, enemyObj->GetPosition().y + 8, enemyObj->GetPosition().z));
-		rAttackObj2->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x, enemyObj->GetPosition().y, enemyObj->GetPosition().z));
-		if (enemyObj->GetRAttackFlag())
-		{
-			dispTimer += elapsedTime;
-			rAttackObj1->SetAngle(DirectX::XMFLOAT3(0, effectAngle1, 0));
-			effectAngle1 += elapsedTime * DirectX::XMConvertToRadians(720);
-			rAttackObj1->SetScale(effectScale1);
-			rAttackObj2->SetAngle(DirectX::XMFLOAT3(0, effectAngle2, 0));
-			effectAngle2 += elapsedTime * DirectX::XMConvertToRadians(720);
-			rAttackObj2->SetScale(effectScale2);
-			effectScale1.x = OutSine(dispTimer, dispMaxTimer, easingScale1, 0);
-			effectScale2.x = OutSine(dispTimer, dispMaxTimer, easingScale2, 0);
-			effectColorW1 = OutSine(dispTimer, dispMaxTimer, easingColor, 0);
-			effectColorW2 = OutSine(dispTimer, dispMaxTimer, easingColor, 0);
-			effectScale1.z = effectScale1.x;
-			effectScale2.z = effectScale2.x;
-			//rAttackObj1->CalculateTransform();
-			//rAttackObj2->CalculateTransform();
-		}
-		else
-		{
-			effectScale1 = XMFLOAT3(13, 2.f, 13);
-			effectScale2 = XMFLOAT3(16, 2.f, 16);
-			effectAngle1 = 0;
-			effectAngle2 = 0;
-			dispTimer = 0;
-		}
-		RAttack(elapsedTime);
-	}
-	if (number == 2)
-	{
-		UAttack(elapsedTime);
-	}
-}
-
-void Enemy::SetLongAttackState()
-{
-	attackMoveFlag = true;//攻撃ステートに入った
-	if (number == LONGATTACK::RUSH)
-	{
-		attackData.angleTime = 0.6f;
-		attackData.rushFlag[1] = false;
-		attackData.rushFlag[0] = false;
-		animNo = static_cast<int>(ANIM::FATTACK1);
-		enemyObj->SetAnim(animNo, false);
-		enemyObj->SetAccelSpeed(speedData.accelSpeed);
-	}
-	if (number == LONGATTACK::THUNDER)
-	{
-		thunderData.exist = true;
-		playerPos = Camera::GetInstance().GetTargetPos();//雷出現位置
-		playerPos.y = enemyObj->GetPosition().y;
-
-		SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::THUNDER1), false);
-		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::BRIBIRI, DirectX::XMFLOAT3(playerPos));
-		EffectObj::GetInstance().SetScale(EffectObj::TYPE::BRIBIRI, DirectX::XMFLOAT3(1.f, 0.3f, 1.f));
-		EffectObj::GetInstance().SetColor(EffectObj::TYPE::BRIBIRI, DirectX::XMFLOAT4(0.4f, 1.f, 1.f, 1.f));
-		EffectObj::GetInstance().Play(EffectObj::TYPE::BRIBIRI);
-		animNo = static_cast<int>(ANIM::HANDUP1);
-		enemyObj->SetAnim(animNo, false);
-		attackData.chargeTime = 0.7f;
-	}
-	if (number == LONGATTACK::SHOT)
-	{
-		enemyObj->SetBounceFlag(false);
-		enemyObj->SetShotAttackFlag(true);
-		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT3(pos.x + enemyObj->GetFront().x * 20.f, 0.1f, pos.z + enemyObj->GetFront().z * 20.f));
-		EffectObj::GetInstance().SetAngle(EffectObj::TYPE::CIRCLE, angle);
-		EffectObj::GetInstance().SetScale(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT3(30.f, 30.f, 30.f));
-		EffectObj::GetInstance().SetColor(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT4(1.f, 1.f, 1.f, 1.f));
-		EffectObj::GetInstance().Play(EffectObj::TYPE::CIRCLE);
-		animNo = static_cast<int>(ANIM::SHOT1);
-		enemyObj->SetAnim(animNo, false);
-		skull->SetAngle(DirectX::XMFLOAT3(angle));
-		shotData.y = -20;
-		skull->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x + enemyObj->GetFront().x * 20.f, shotData.y, enemyObj->GetPosition().z + enemyObj->GetFront().z * 20.f));
-	}
-	state = STATE::LONGATTACK;
-	waiteTime = 0;
-	actionState = ACTION::FIRST;
-	enemyObj->SetDamageFlag(false);
-	enemyObj->SetHighAttackFlag(false);
-	pos = enemyObj->GetPosition();
-}
-
-void Enemy::UpdateLongAttackState(float elapsedTime)
-{
-	EffectObj::GetInstance().SetPosition(EffectObj::TYPE::CHARGE, enemyObj->GetHitSphere().position);
-	EffectObj::GetInstance().SetPosition(EffectObj::TYPE::TST, DirectX::XMFLOAT3(enemyObj->GetPosition().x + sinf(enemyObj->GetAngle().y) * 50.f, 0, enemyObj->GetPosition().z + cosf(enemyObj->GetAngle().y) * 50.f));
-	if (number == LONGATTACK::RUSH)
-	{
-		RushAttack(elapsedTime);
-	}
-	if (number == LONGATTACK::THUNDER)
-	{
-		ThunderAttack(elapsedTime);
-	}
-	if (number == LONGATTACK::SHOT)
-	{
-		ShotAttack(elapsedTime);
-	}
-}
-void Enemy::SetTeleportationState()
-{
-	animNo = static_cast<int>(ANIM::HANDUP1);
-	enemyObj->SetAnim(animNo, false);
-	actionState = ACTION::FIRST;
-	state = STATE::TELEPORTATION;
-}
-void Enemy::UpdateTeleportationState(float elapsedTime)
-{
-	CalculateLength();
-	CalculateDotCross();
-	DirectX::XMFLOAT3 toPlayerAngle;
-	DirectX::XMStoreFloat3(&toPlayerAngle, vec);
-	switch (actionState)
-	{
-	case ACTION::FIRST:
-		if (acosf(dot) > DirectX::XMConvertToRadians(5))
-		{
-			if (cross.y < 0)
-				angle.y -= DirectX::XMConvertToRadians(180) * elapsedTime;//acosfでシータ（角度）がでる　
-			else
-				angle.y += DirectX::XMConvertToRadians(180) * elapsedTime;
-		}
-		else
-		{
-			//DirectX::XMConvertToRadians(num)より小さくなった場合ぶれないよに
-			angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
-		}
-		enemyObj->SetAngle(angle);
+		CalculateLength();
+		CalculateDotCross();
 		waiteTime += elapsedTime;
-		if (waiteTime > 1.5f)
+		if (waiteTime < choiceData.time)
 		{
-			actionState = ACTION::SECOND;
-			animNo = static_cast<int>(ANIM::HANDUP3);
-			enemyObj->SetAnim(animNo, false);
-		}
-		break;
-	case ACTION::SECOND:
-		if (!enemyObj->GetAnimContinue())//戻ればwaitに
-		{
-			actionState = ACTION::THIRD;
-		}
-		break;
+			DirectX::XMFLOAT3 toPlayerAngle;
+			DirectX::XMStoreFloat3(&toPlayerAngle, vec);
+			//向き変更
 
-	case ACTION::THIRD:
-		pos.x = pos.x - sinf(angle.y) * 60;
-		pos.z = pos.z - cosf(angle.y) * 60;
-
-		enemyObj->SetPosition(pos);
-		SetChoiceState();
-		break;
-	}
-}
-void Enemy::SAttack(float elapsedTime)//２連撃
-{
-	CalculateLength();
-	CalculateDotCross();
-	//向き変更
-	DirectX::XMFLOAT3 toPlayerAngle;
-	DirectX::XMStoreFloat3(&toPlayerAngle, vec);
-	switch (actionState)
-	{
-	case ACTION::FIRST:
-		if (animTime > 0.8)
-		{
-			if (len > 20)
+			if (acosf(dot) > DirectX::XMConvertToRadians(5))
 			{
-				pos.x += sinf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
-				pos.z += cosf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
+				if (cross.y < 0)
+					angle.y -= DirectX::XMConvertToRadians(360) * elapsedTime;//acosfでシータ（角度）がでる　
+				else
+					angle.y += DirectX::XMConvertToRadians(360) * elapsedTime;
+			}
+			else
+			{
+				//DirectX::XMConvertToRadians(num)より小さくなった場合ぶれないよに
+				angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
+			}
+			enemyObj->SetAngle(angle);
+			//移動
+			if (len > 20) //playerとの距離が20より大きい場合のみplayerのほうへ移動
+			{
+				pos.x += sinf(angle.y) * enemyObj->GetRunSpeed() * elapsedTime;
+				pos.z += cosf(angle.y) * enemyObj->GetRunSpeed() * elapsedTime;
 				enemyObj->SetPosition(pos);
+			}
+			else
+			{
+				SetChoiceState();
+			}
+			if (waiteTime > choiceData.time * 0.5f)
+			{
+				enemyObj->SetRunSpeed(30.f);
 			}
 		}
 		else
 		{
+			SetChoiceState();
+		}
+	}
+
+	void Enemy::SetBackStepState()
+	{
+		state = STATE::BACK;
+		animNo = static_cast<int>(ANIM::RUN);
+		enemyObj->SetAccelSpeed(speedData.runSpeed);
+		enemyObj->SetAnim(animNo, true);
+		pos = enemyObj->GetPosition();
+		attackMoveFlag = false;
+	}
+
+	void Enemy::UpdateBackStepState(float elapsedTime)
+	{
+		CalculateLength();
+		CalculateDotCross();
+		waiteTime += elapsedTime;
+		if (waiteTime < choiceData.time)
+		{
+			DirectX::XMFLOAT3 toPlayerAngle;
+			DirectX::XMStoreFloat3(&toPlayerAngle, vec);
+			//向き変更
+			if (acosf(dot) > DirectX::XMConvertToRadians(5))
+			{
+				if (cross.y < 0) angle.y -= DirectX::XMConvertToRadians(180) * elapsedTime;//acosfでシータ（角度）がでる　
+				else angle.y += DirectX::XMConvertToRadians(180) * elapsedTime;
+			}
+			else angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
+
+			enemyObj->SetAngle(angle);
+			//移動
+			pos.x -= sinf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
+			pos.z -= cosf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
+			enemyObj->SetPosition(pos);
+		}
+		else SetChoiceState();
+	}
+
+	void Enemy::SetShortAttackState()
+	{
+		attackMoveFlag = true;//攻撃ステートに入った
+		if (number == SHORTATTACK::SATTACK)
+		{
+			animNo = static_cast<int>(ANIM::SATTACK);
+			enemyObj->SetAnim(animNo, false);
+			enemyObj->SetAccelSpeed(100.f);
+			attackData.angleTime = 0.6f;
+			attackData.chargeTime = 0.4f;
+
+		}
+		if (number == SHORTATTACK::RATTACK)
+		{
+			animNo = static_cast<int>(ANIM::RATTACK1);
+			enemyObj->SetAnim(animNo, false);
+
+			attackData.chargeTime = 1.0f;
+		}
+		if (number == SHORTATTACK::UATTACK)
+		{
+			//チャージエフェクト
+			EffectObj::GetInstance().SetScale(EffectObj::TYPE::CHARGE, DirectX::XMFLOAT3(10, 10, 10));
+			EffectObj::GetInstance().Play(EffectObj::TYPE::CHARGE);
+
+			animNo = static_cast<int>(ANIM::UATTACK);
+			enemyObj->SetAnim(animNo, false);
+		}
+		//初期化
+		state = STATE::SHORTATTACK;
+		waiteTime = 0;
+		actionState = ACTION::FIRST;
+		animSpeed = 1.0f;
+		angle = enemyObj->GetAngle();
+		enemyObj->SetDamageFlag(false);
+		enemyObj->SetRAttackFlag(false);
+		enemyObj->SetHighAttackFlag(false);
+	}
+
+	void Enemy::UpdateShortAttackState(float elapsedTime)
+	{
+		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::CHARGE, enemyObj->GetHitSphere().position);
+		if (number == 0)
+		{
+			SAttack(elapsedTime);
+		}
+		if (number == 1)
+		{
+			static float dispTimer;
+
+			rAttackObj1->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x, enemyObj->GetPosition().y + 8, enemyObj->GetPosition().z));
+			rAttackObj2->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x, enemyObj->GetPosition().y, enemyObj->GetPosition().z));
+			if (enemyObj->GetRAttackFlag())
+			{
+				dispTimer += elapsedTime;
+				rAttackObj1->SetAngle(DirectX::XMFLOAT3(0, rAttackData.effectAngle1, 0));
+				rAttackData.effectAngle1 += elapsedTime * DirectX::XMConvertToRadians(720);
+				
+				rAttackObj2->SetAngle(DirectX::XMFLOAT3(0, rAttackData.effectAngle2, 0));
+				rAttackData.effectAngle2 += elapsedTime * DirectX::XMConvertToRadians(720);
+				
+				rAttackData.effectScale1.x = OutSine(dispTimer, rAttackData.dispMaxTimer, rAttackData.easingScale1, 0);
+				rAttackData.effectScale2.x = OutSine(dispTimer, rAttackData.dispMaxTimer, rAttackData.easingScale2, 0);
+				rAttackData.effectColorW1 = OutSine(dispTimer, rAttackData.dispMaxTimer, rAttackData.easingColor, 0);
+				rAttackData.effectColorW2 = OutSine(dispTimer, rAttackData.dispMaxTimer, rAttackData.easingColor, 0);
+				rAttackData.effectScale1.z = rAttackData.effectScale1.x;
+				rAttackData.effectScale2.z = rAttackData.effectScale2.x;
+
+				rAttackObj1->SetScale(rAttackData.effectScale1);
+				rAttackObj2->SetScale(rAttackData.effectScale2);
+			}
+			else
+			{
+
+				rAttackData.effectScale1 = XMFLOAT3(rAttackData.defaultScale1);
+				rAttackData.effectScale2 = XMFLOAT3(rAttackData.defaultScale1);
+				//初期化
+				rAttackObj1->SetScale(rAttackData.effectScale1);
+				rAttackObj2->SetScale(rAttackData.effectScale2);
+
+				rAttackData.effectAngle1 = 0;
+				rAttackData.effectAngle2 = 0;
+				dispTimer = 0;
+			}
+			RAttack(elapsedTime);
+		}
+		if (number == 2)
+		{
+			UAttack(elapsedTime);
+		}
+	}
+
+	void Enemy::SetLongAttackState()
+	{
+		attackMoveFlag = true;//攻撃ステートに入った
+		if (number == LONGATTACK::RUSH)
+		{
+			attackData.angleTime = 0.6f;
+			attackData.rushFlag[1] = false;
+			attackData.rushFlag[0] = false;
+			animNo = static_cast<int>(ANIM::FATTACK1);
+			enemyObj->SetAnim(animNo, false);
+			enemyObj->SetAccelSpeed(speedData.accelSpeed);
+		}
+		if (number == LONGATTACK::THUNDER)
+		{
+			thunderData.exist = true;
+			playerPos = Camera::GetInstance().GetTargetPos();//雷出現位置
+			playerPos.y = enemyObj->GetPosition().y;
+
+			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::THUNDER1), false);
+			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::BRIBIRI, DirectX::XMFLOAT3(playerPos));
+			EffectObj::GetInstance().SetScale(EffectObj::TYPE::BRIBIRI, DirectX::XMFLOAT3(1.f, 0.3f, 1.f));
+			EffectObj::GetInstance().SetColor(EffectObj::TYPE::BRIBIRI, DirectX::XMFLOAT4(0.4f, 1.f, 1.f, 1.f));
+			EffectObj::GetInstance().Play(EffectObj::TYPE::BRIBIRI);
+			animNo = static_cast<int>(ANIM::HANDUP1);
+			enemyObj->SetAnim(animNo, false);
+			attackData.chargeTime = 0.7f;
+		}
+		if (number == LONGATTACK::SHOT)
+		{
+			enemyObj->SetBounceFlag(false);
+			enemyObj->SetShotAttackFlag(true);
+			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT3(pos.x + enemyObj->GetFront().x * 20.f, 0.1f, pos.z + enemyObj->GetFront().z * 20.f));
+			EffectObj::GetInstance().SetAngle(EffectObj::TYPE::CIRCLE, angle);
+			EffectObj::GetInstance().SetScale(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT3(30.f, 30.f, 30.f));
+			EffectObj::GetInstance().SetColor(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT4(1.f, 1.f, 1.f, 1.f));
+			EffectObj::GetInstance().Play(EffectObj::TYPE::CIRCLE);
+			animNo = static_cast<int>(ANIM::SHOT1);
+			enemyObj->SetAnim(animNo, false);
+			skull->SetAngle(DirectX::XMFLOAT3(angle));
+			shotData.y = -20;
+			skull->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x + enemyObj->GetFront().x * 20.f, shotData.y, enemyObj->GetPosition().z + enemyObj->GetFront().z * 20.f));
+		}
+		state = STATE::LONGATTACK;
+		waiteTime = 0;
+		actionState = ACTION::FIRST;
+		enemyObj->SetDamageFlag(false);
+		enemyObj->SetHighAttackFlag(false);
+		pos = enemyObj->GetPosition();
+	}
+
+	void Enemy::UpdateLongAttackState(float elapsedTime)
+	{
+		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::CHARGE, enemyObj->GetHitSphere().position);
+		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::RUN, DirectX::XMFLOAT3(enemyObj->GetPosition().x + sinf(enemyObj->GetAngle().y) * 50.f, 0, enemyObj->GetPosition().z + cosf(enemyObj->GetAngle().y) * 50.f));
+		if (number == LONGATTACK::RUSH)
+		{
+			RushAttack(elapsedTime);
+		}
+		if (number == LONGATTACK::THUNDER)
+		{
+			ThunderAttack(elapsedTime);
+		}
+		if (number == LONGATTACK::SHOT)
+		{
+			ShotAttack(elapsedTime);
+		}
+	}
+	void Enemy::SetTeleportationState()
+	{
+		animNo = static_cast<int>(ANIM::HANDUP1);
+		enemyObj->SetAnim(animNo, false);
+		actionState = ACTION::FIRST;
+		state = STATE::TELEPORTATION;
+	}
+	void Enemy::UpdateTeleportationState(float elapsedTime)
+	{
+		CalculateLength();
+		CalculateDotCross();
+		DirectX::XMFLOAT3 toPlayerAngle;
+		DirectX::XMStoreFloat3(&toPlayerAngle, vec);
+		switch (actionState)
+		{
+		case ACTION::FIRST:
 			if (acosf(dot) > DirectX::XMConvertToRadians(5))
 			{
 				if (cross.y < 0)
@@ -1025,178 +1015,146 @@ void Enemy::SAttack(float elapsedTime)//２連撃
 					angle.y += DirectX::XMConvertToRadians(180) * elapsedTime;
 			}
 			else
+			{
+				//DirectX::XMConvertToRadians(num)より小さくなった場合ぶれないよに
 				angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
+			}
 			enemyObj->SetAngle(angle);
-		}
-		if (animTime >= 1.0f)
-		{
-			actionState = ACTION::SECOND;
-			enemyObj->SetAttackFlag(true);
-			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING3), false);
-		}
-		break;
-	case ACTION::SECOND:
-		if (animTime > 1.55f)
-		{
-			enemyObj->SetAttackFlag(false);
-		}
-		else
-		{
-			pos.x += sinf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
-			pos.z += cosf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
+			waiteTime += elapsedTime;
+			if (waiteTime > 1.5f)
+			{
+				actionState = ACTION::SECOND;
+				animNo = static_cast<int>(ANIM::HANDUP3);
+				enemyObj->SetAnim(animNo, false);
+			}
+			break;
+		case ACTION::SECOND:
+			if (!enemyObj->GetAnimContinue())//戻ればwaitに
+			{
+				actionState = ACTION::THIRD;
+			}
+			break;
+
+		case ACTION::THIRD:
+			pos.x = pos.x - sinf(angle.y) * 60;
+			pos.z = pos.z - cosf(angle.y) * 60;
+
 			enemyObj->SetPosition(pos);
-		}
-		if (!enemyObj->GetAnimContinue())
-		{
 			SetChoiceState();
-		}
-		break;
-	}
-}
-void Enemy::RAttack(float elapsedTime)//回転攻撃
-{
-	switch (actionState)
-	{
-	case ACTION::FIRST:
-		waiteTime += elapsedTime;
-		if (waiteTime > attackData.chargeTime)//溜め時間。超えたら回転攻撃に入る
-		{
-			animNo = static_cast<int>(ANIM::RATTACK2);
-			enemyObj->SetAnim(animNo, false);
-			actionState = ACTION::SECOND;
-			waiteTime = 0;
-			animSpeed = 2.0f;//攻撃速度を上げる
-
-			enemyObj->SetAttackFlag(true);
-			enemyObj->SetHighAttackFlag(true);
-
-		}
-		break;
-	case  ACTION::SECOND:
-		waiteTime += elapsedTime;
-		if(waiteTime>0.1f)enemyObj->SetRAttackFlag(true);
-		if (!enemyObj->GetAnimContinue())//終われば元に戻るモーションに
-		{
-			animSpeed = 1.0f;
-			animNo = static_cast<int>(ANIM::RATTACK3);
-			enemyObj->SetAnim(animNo, false);
-			actionState = ACTION::THIRD;
-		}
-		break;
-	case ACTION::THIRD:
-		if (!enemyObj->GetAnimContinue())//戻ればwaitに
-		{
-			SetChoiceState();
-			enemyObj->SetRAttackFlag(false);
-			enemyObj->SetHighAttackFlag(false);
-
+			break;
 		}
 	}
-}
-void Enemy::UAttack(float elapsedTime)//上振り攻撃
-{
-	CalculateLength();
-	CalculateDotCross();
-	//補完用変数
-	float a = angle.y;
-	DirectX::XMVECTOR T = DirectX::XMVectorSet(0, 0, 0, 0);
-
-	switch (actionState)
+	void Enemy::SAttack(float elapsedTime)//２連撃
 	{
-	case ACTION::FIRST:
-	{
+		CalculateLength();
+		CalculateDotCross();
+		//向き変更
 		DirectX::XMFLOAT3 toPlayerAngle;
 		DirectX::XMStoreFloat3(&toPlayerAngle, vec);
-		//向き変更
-		if (acosf(dot) > DirectX::XMConvertToRadians(5))
+		switch (actionState)
 		{
-			if (cross.y < 0)
-				angle.y -= DirectX::XMConvertToRadians(180) * elapsedTime;//acosfでシータ（角度）がでる　
+		case ACTION::FIRST:
+			if (animTime > 0.8)
+			{
+				if (len > 20)
+				{
+					pos.x += sinf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
+					pos.z += cosf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
+					enemyObj->SetPosition(pos);
+				}
+			}
 			else
-				angle.y += DirectX::XMConvertToRadians(180) * elapsedTime;
-		}
-		else
-		{
-			//DirectX::XMConvertToRadians(num)より小さくなった場合ぶれないよに
-			angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
-		}
-		enemyObj->SetAngle(angle);
-		waiteTime += elapsedTime;
-		if (animTime > 0.2) // 即攻撃に入らないようにためを作る
-		{
-			animSpeed = 0;
-			if (!AttackLine::GetInctance().GetExistFlag())
 			{
-				AttackLine::GetInctance().SetExistFlag(true);
+				if (acosf(dot) > DirectX::XMConvertToRadians(5))
+				{
+					if (cross.y < 0)
+						angle.y -= DirectX::XMConvertToRadians(180) * elapsedTime;//acosfでシータ（角度）がでる　
+					else
+						angle.y += DirectX::XMConvertToRadians(180) * elapsedTime;
+				}
+				else
+					angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
+				enemyObj->SetAngle(angle);
 			}
-		}
-		if (waiteTime > attackData.chargeTime)//溜め時間。超えたら攻撃に入る
-		{
-			actionState = ACTION::SECOND;
-			waiteTime = 0;
-			EffectObj::GetInstance().SetStraightFlag(true);
-			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING3), false);
-		}
-		//attakLine
-		AttackLine::GetInctance().SetScale(DirectX::XMFLOAT3(16.f, 0.1f, 60.f));
-		AttackLine::GetInctance().SetAngle(enemyObj->GetAngle());
-		AttackLine::GetInctance().SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x, 0.1f, enemyObj->GetPosition().z));
-		//斬撃エフェクト
-		EffectObj::GetInstance().SetScale(EffectObj::TYPE::SLASHING, DirectX::XMFLOAT3(5, 5, 5));
-		EffectObj::GetInstance().SetColor(EffectObj::TYPE::SLASHING, DirectX::XMFLOAT4(1, 1, 1, 1));
-		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::SLASHING, DirectX::XMFLOAT3(enemyObj->GetHitSphere().position.x, 0, enemyObj->GetHitSphere().position.z));
-		EffectObj::GetInstance().SetAngle(EffectObj::TYPE::SLASHING, enemyObj->GetAngle());
-
-	}
-	break;
-	case ACTION::SECOND:
-		enemyObj->SetAttackFlag(true);
-		enemyObj->SetHighAttackFlag(true);
-		animSpeed = 1.0f;
-		waiteTime += elapsedTime;
-		if (waiteTime > 0.2f)
-		{
-			if (AttackLine::GetInctance().GetExistFlag())
+			if (animTime >= 1.0f)
 			{
-				AttackLine::GetInctance().SetExistFlag(false);
+				actionState = ACTION::SECOND;
+				enemyObj->SetAttackFlag(true);
+				SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING3), false);
 			}
+			break;
+		case ACTION::SECOND:
+			if (animTime > 1.55f)
+			{
+				enemyObj->SetAttackFlag(false);
+			}
+			else
+			{
+				pos.x += sinf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
+				pos.z += cosf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
+				enemyObj->SetPosition(pos);
+			}
+			if (!enemyObj->GetAnimContinue())
+			{
+				SetChoiceState();
+			}
+			break;
 		}
-		if (!enemyObj->GetAnimContinue())//モーションが終わったら待機に戻る
-		{
-			waiteTime = 0;
-			AttackLine::GetInctance().SetExistFlag(false);
-			enemyObj->SetAttackFlag(false);
-			enemyObj->SetHighAttackFlag(false);
-			SetChoiceState();
-		}
-		break;
 	}
-}
-void Enemy::RushAttack(float elapsedTime)//突進
-{
-	CalculateLength();
-	CalculateDotCross();
-	pos = enemyObj->GetPosition();
-	DirectX::XMFLOAT3 toPlayerAngle;
-	DirectX::XMStoreFloat3(&toPlayerAngle, vec);
-	switch (actionState)
+	void Enemy::RAttack(float elapsedTime)//回転攻撃
 	{
-	case ACTION::FIRST:
-		waiteTime += elapsedTime;
-		//チャージ時間
-		if (waiteTime > attackData.chargeTime)
+		switch (actionState)
 		{
-			actionState = ACTION::SECOND;
-			waiteTime = 0;
+		case ACTION::FIRST:
+			waiteTime += elapsedTime;
+			if (waiteTime > attackData.chargeTime)//溜め時間。超えたら回転攻撃に入る
+			{
+				animNo = static_cast<int>(ANIM::RATTACK2);
+				enemyObj->SetAnim(animNo, false);
+				actionState = ACTION::SECOND;
+				waiteTime = 0;
+				animSpeed = 2.0f;//攻撃速度を上げる
 
-			EffectObj::GetInstance().SetScale(EffectObj::TYPE::CHARGE, DirectX::XMFLOAT3(10, 10, 10));
-			EffectObj::GetInstance().Play(EffectObj::TYPE::CHARGE);
+				enemyObj->SetAttackFlag(true);
+				enemyObj->SetHighAttackFlag(true);
+
+			}
+			break;
+		case  ACTION::SECOND:
+			waiteTime += elapsedTime;
+			if (waiteTime > 0.1f)enemyObj->SetRAttackFlag(true);
+			if (!enemyObj->GetAnimContinue())//終われば元に戻るモーションに
+			{
+				animSpeed = 1.0f;
+				animNo = static_cast<int>(ANIM::RATTACK3);
+				enemyObj->SetAnim(animNo, false);
+				actionState = ACTION::THIRD;
+			}
+			break;
+		case ACTION::THIRD:
+			if (!enemyObj->GetAnimContinue())//戻ればwaitに
+			{
+				SetChoiceState();
+				enemyObj->SetRAttackFlag(false);
+				enemyObj->SetHighAttackFlag(false);
+
+			}
 		}
-		break;
-	case ACTION::SECOND: //回転
-		waiteTime += elapsedTime;
-		if (waiteTime < attackData.angleTime)
+	}
+	void Enemy::UAttack(float elapsedTime)//上振り攻撃
+	{
+		CalculateLength();
+		CalculateDotCross();
+		//補完用変数
+		float a = angle.y;
+		DirectX::XMVECTOR T = DirectX::XMVectorSet(0, 0, 0, 0);
+
+		switch (actionState)
 		{
+		case ACTION::FIRST:
+		{
+			DirectX::XMFLOAT3 toPlayerAngle;
+			DirectX::XMStoreFloat3(&toPlayerAngle, vec);
 			//向き変更
 			if (acosf(dot) > DirectX::XMConvertToRadians(5))
 			{
@@ -1211,305 +1169,404 @@ void Enemy::RushAttack(float elapsedTime)//突進
 				angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
 			}
 			enemyObj->SetAngle(angle);
-		}
-		else
-		{
-			actionState = ACTION::THIRD;
-			waiteTime = 0;
+			waiteTime += elapsedTime;
+			if (animTime > 0.2) // 即攻撃に入らないようにためを作る
+			{
+				animSpeed = 0;
+				if (!AttackLine::GetInctance().GetExistFlag())
+				{
+					AttackLine::GetInctance().SetExistFlag(true);
+				}
+			}
+			if (waiteTime > attackData.chargeTime)//溜め時間。超えたら攻撃に入る
+			{
+				actionState = ACTION::SECOND;
+				waiteTime = 0;
+				EffectObj::GetInstance().SetStraightFlag(true);
+				SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING3), false);
+			}
+			//attakLine
+			AttackLine::GetInctance().SetScale(DirectX::XMFLOAT3(16.f, 0.1f, 60.f));
+			AttackLine::GetInctance().SetAngle(enemyObj->GetAngle());
+			AttackLine::GetInctance().SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x, 0.1f, enemyObj->GetPosition().z));
+			//斬撃エフェクト
+			EffectObj::GetInstance().SetScale(EffectObj::TYPE::SLASHING, DirectX::XMFLOAT3(5, 5, 5));
+			EffectObj::GetInstance().SetColor(EffectObj::TYPE::SLASHING, DirectX::XMFLOAT4(1, 1, 1, 1));
+			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::SLASHING, DirectX::XMFLOAT3(enemyObj->GetHitSphere().position.x, 0, enemyObj->GetHitSphere().position.z));
+			EffectObj::GetInstance().SetAngle(EffectObj::TYPE::SLASHING, enemyObj->GetAngle());
 
-			EffectObj::GetInstance().SetScale(EffectObj::TYPE::TST, DirectX::XMFLOAT3(5.f, 5.f, 5.f));
-			EffectObj::GetInstance().SetColor(EffectObj::TYPE::TST, DirectX::XMFLOAT4(1.f, 1.f, 1.f, 0.7f));
-			EffectObj::GetInstance().SetAngle(EffectObj::TYPE::TST, enemyObj->GetAngle());
-			EffectObj::GetInstance().Play(EffectObj::TYPE::TST);
 		}
 		break;
-	case ACTION::THIRD://突進
-		waiteTime += elapsedTime;
-		if (!attackData.rushFlag[0])
-		{
-			if (waiteTime < attackData.rushTime)
+		case ACTION::SECOND:
+			enemyObj->SetAttackFlag(true);
+			enemyObj->SetHighAttackFlag(true);
+			animSpeed = 1.0f;
+			waiteTime += elapsedTime;
+			if (waiteTime > 0.2f)
 			{
-				pos.x += sinf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
-				pos.z += cosf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
+				if (AttackLine::GetInctance().GetExistFlag())
+				{
+					AttackLine::GetInctance().SetExistFlag(false);
+				}
+			}
+			if (!enemyObj->GetAnimContinue())//モーションが終わったら待機に戻る
+			{
+				waiteTime = 0;
+				AttackLine::GetInctance().SetExistFlag(false);
+				enemyObj->SetAttackFlag(false);
+				enemyObj->SetHighAttackFlag(false);
+				SetChoiceState();
+			}
+			break;
+		}
+	}
+	void Enemy::RushAttack(float elapsedTime)//突進
+	{
+		CalculateLength();
+		CalculateDotCross();
+		pos = enemyObj->GetPosition();
+		DirectX::XMFLOAT3 toPlayerAngle;
+		DirectX::XMStoreFloat3(&toPlayerAngle, vec);
+		switch (actionState)
+		{
+		case ACTION::FIRST:
+			waiteTime += elapsedTime;
+			//チャージ時間
+			if (waiteTime > attackData.chargeTime)
+			{
+				actionState = ACTION::SECOND;
+				waiteTime = 0;
 
-				enemyObj->SetPosition(pos);
-				if (len < 30)
+				EffectObj::GetInstance().SetScale(EffectObj::TYPE::CHARGE, DirectX::XMFLOAT3(10, 10, 10));
+				EffectObj::GetInstance().Play(EffectObj::TYPE::CHARGE);
+			}
+			break;
+		case ACTION::SECOND: //回転
+			waiteTime += elapsedTime;
+			if (waiteTime < attackData.angleTime)
+			{
+				//向き変更
+				if (acosf(dot) > DirectX::XMConvertToRadians(5))
+				{
+					if (cross.y < 0)
+						angle.y -= DirectX::XMConvertToRadians(180) * elapsedTime;//acosfでシータ（角度）がでる　
+					else
+						angle.y += DirectX::XMConvertToRadians(180) * elapsedTime;
+				}
+				else
+				{
+					//DirectX::XMConvertToRadians(num)より小さくなった場合ぶれないよに
+					angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
+				}
+				enemyObj->SetAngle(angle);
+			}
+			else
+			{
+				actionState = ACTION::THIRD;
+				waiteTime = 0;
+
+				EffectObj::GetInstance().SetScale(EffectObj::TYPE::RUN, DirectX::XMFLOAT3(5.f, 5.f, 5.f));
+				EffectObj::GetInstance().SetColor(EffectObj::TYPE::RUN, DirectX::XMFLOAT4(1.f, 1.f, 1.f, 0.7f));
+				EffectObj::GetInstance().SetAngle(EffectObj::TYPE::RUN, enemyObj->GetAngle());
+				EffectObj::GetInstance().Play(EffectObj::TYPE::RUN);
+			}
+			break;
+		case ACTION::THIRD://突進
+			waiteTime += elapsedTime;
+			if (!attackData.rushFlag[0])
+			{
+				if (waiteTime < attackData.rushTime)
+				{
+					pos.x += sinf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
+					pos.z += cosf(angle.y) * enemyObj->GetAccelSpeed() * elapsedTime;
+
+					enemyObj->SetPosition(pos);
+					if (len < 30)
+					{
+						attackData.rushFlag[0] = true;
+					}
+				}
+				else
 				{
 					attackData.rushFlag[0] = true;
 				}
 			}
-			else
+			if (attackData.rushFlag[0])
 			{
-				attackData.rushFlag[0] = true;
+				if (animNo != static_cast<int>(ANIM::FATTACK3))
+				{
+					animNo = static_cast<int>(ANIM::FATTACK3);
+					enemyObj->SetAnim(animNo, false);
+					attackData.rushFlag[1] = true;
+					EffectObj::GetInstance().Stop(EffectObj::TYPE::RUN);
+					SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING3), false);
+				}
 			}
-		}
-		if (attackData.rushFlag[0])
-		{
-			if (animNo != static_cast<int>(ANIM::FATTACK3))
+			if (attackData.rushFlag[1])
 			{
-				animNo = static_cast<int>(ANIM::FATTACK3);
-				enemyObj->SetAnim(animNo, false);
-				attackData.rushFlag[1] = true;
-				EffectObj::GetInstance().Stop(EffectObj::TYPE::TST);
-				SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING3), false);
+				enemyObj->SetAttackFlag(true);
+				enemyObj->SetHighAttackFlag(true);
+				if (!enemyObj->GetAnimContinue())
+				{
+					enemyObj->SetHighAttackFlag(false);
+					enemyObj->SetAttackFlag(false);
+					SetChoiceState();
+				}
 			}
-		}
-		if (attackData.rushFlag[1])
-		{
-			enemyObj->SetAttackFlag(true);
-			enemyObj->SetHighAttackFlag(true);
-			if (!enemyObj->GetAnimContinue())
-			{
-				enemyObj->SetHighAttackFlag(false);
-				enemyObj->SetAttackFlag(false);
-				SetChoiceState();
-			}
-		}
-		break;
-	}
-}
-void Enemy::ThunderAttack(float elapsedTime)
-{
-	switch (actionState)
-	{
-	case ACTION::FIRST:
-		waiteTime += elapsedTime;
-		if (thunderData.exist)
-		{
-			for (int i = 0; i < THUNDERNUM; i++)
-			{
-				thunderData.pos[0] = playerPos;
-				thunderData.w[i] = InQuad(waiteTime, attackData.chargeTime, 10.0f, 0.f);
-			}
-		}
-		if (waiteTime > attackData.chargeTime)
-		{
-			waiteTime = 0;
-			actionState = ACTION::SECOND;
-			SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::THUNDER2), 10.f);
-			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::THUNDER2), false);
-			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::THUNDER, DirectX::XMFLOAT3(playerPos));
-			EffectObj::GetInstance().SetScale(EffectObj::TYPE::THUNDER, DirectX::XMFLOAT3(3, 10, 3));
-			EffectObj::GetInstance().SetColor(EffectObj::TYPE::THUNDER, DirectX::XMFLOAT4(0.4f, 1.f, 1.f, 1.f));
-			EffectObj::GetInstance().Play(EffectObj::TYPE::THUNDER);
-		}
-		break;
-	case ACTION::SECOND:
-		waiteTime += elapsedTime;
-		if (waiteTime > thunderData.attackStartTime)
-		{
-			if (!enemyObj->GetDamageFlag())enemyObj->SetAttackFlag(true);
-			for (int i = 0; i < THUNDERNUM; i++)
-			{
-				thunderData.w[i] = 0.f;
-			}
-		}
-		if (waiteTime > thunderData.attackEndTime)
-		{
-			enemyObj->SetAttackFlag(false);
-			thunderData.exist = false;
-		}
-		if (waiteTime > thunderData.endTime)
-		{
-			if (EffectObj::GetInstance().Exist(EffectObj::TYPE::THUNDER))
-			{
-				EffectObj::GetInstance().Stop(EffectObj::TYPE::THUNDER);
-			}
-			SetChoiceState();
-		}
-		break;
-	}
-
-}
-void Enemy::ShotAttack(float elapsedTime)
-{
-	if (enemyObj->GetDamageFlag())
-	{
-		if (enemyObj->GetPosition().y > 0)
-		{
-			pos.y -= elapsedTime * 30;
-			enemyObj->SetPosition(pos);
-		}
-		else
-		{
-			SetWaitState();
+			break;
 		}
 	}
-	CalculateLength();
-	CalculateDotCross();
-	DirectX::XMFLOAT3 toPlayerAngle;
-	DirectX::XMStoreFloat3(&toPlayerAngle, vec);
-	static DirectX::XMFLOAT3 skulPos = skull->GetPosition();
-	static DirectX::XMFLOAT3 skulAngle = skull->GetAngle();
-	if (enemyObj->GetBounceFlag())
-	{
-
-		DirectX::XMVECTOR skulV = DirectX::XMLoadFloat3(&skulPos);
-
-		DirectX::XMVECTOR enemyV = DirectX::XMLoadFloat3(&pos);
-		DirectX::XMVECTOR v = DirectX::XMVectorSubtract(enemyV, skulV);
-		v = DirectX::XMVector3Normalize(v);//単位ベクトル化
-
-		skulAngle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
-
-		DirectX::XMFLOAT3 vF;
-		DirectX::XMStoreFloat3(&vF, v);
-		vF = Vec3Multiply(vF, 300.f * elapsedTime);
-		skulPos = Vec3Add(skulPos, vF);
-
-		skull->SetAngle(DirectX::XMFLOAT3(skulAngle.x, -skulAngle.y, skulAngle.z));
-		skull->SetPosition(skulPos);
-	}
-	else
+	void Enemy::ThunderAttack(float elapsedTime)
 	{
 		switch (actionState)
 		{
 		case ACTION::FIRST:
-			pos.y += elapsedTime * 30;
-			if (pos.y > 30)
+			waiteTime += elapsedTime;
+			if (thunderData.exist)
 			{
-				actionState = ACTION::FIRSTEND;
+				for (int i = 0; i < THUNDERNUM; i++)
+				{
+					thunderData.pos[0] = playerPos;
+					thunderData.w[i] = InQuad(waiteTime, attackData.chargeTime, 10.0f, 0.f);
+				}
 			}
-			enemyObj->SetPosition(pos);
-			break;
-		case ACTION::FIRSTEND:
-			shotData.y += elapsedTime * 18;
-			skull->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x + enemyObj->GetFront().x * 20.f, shotData.y, enemyObj->GetPosition().z + enemyObj->GetFront().z * 20.f));
-			skulPos = skull->GetPosition();
-
-			enemyObj->SetAngle(angle);
-			EffectObj::GetInstance().SetAngle(EffectObj::TYPE::CIRCLE, angle);
-			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT3(pos.x + enemyObj->GetFront().x * 20.f, 0.1f, pos.z + enemyObj->GetFront().z * 20.f));
-			if (shotData.y >= 0.1f)
+			if (waiteTime > attackData.chargeTime)
 			{
+				waiteTime = 0;
 				actionState = ACTION::SECOND;
-				//SetWaitState();
+				SoundManager::getinctance().Volume(static_cast<int>(SoundManager::SOUNDGAME::THUNDER2), 10.f);
+				SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::THUNDER2), false);
+				EffectObj::GetInstance().SetPosition(EffectObj::TYPE::THUNDER, DirectX::XMFLOAT3(playerPos));
+				EffectObj::GetInstance().SetScale(EffectObj::TYPE::THUNDER, DirectX::XMFLOAT3(3, 10, 3));
+				EffectObj::GetInstance().SetColor(EffectObj::TYPE::THUNDER, DirectX::XMFLOAT4(0.4f, 1.f, 1.f, 1.f));
+				EffectObj::GetInstance().Play(EffectObj::TYPE::THUNDER);
 			}
 			break;
 		case ACTION::SECOND:
 			waiteTime += elapsedTime;
-			if (acosf(dot) > DirectX::XMConvertToRadians(5))
+			if (waiteTime > thunderData.attackStartTime)
 			{
-				if (cross.y < 0)
-					angle.y -= DirectX::XMConvertToRadians(180) * elapsedTime;//acosfでシータ（角度）がでる　
-				else
-					angle.y += DirectX::XMConvertToRadians(180) * elapsedTime;
-			}
-			else
-				angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
-
-			enemyObj->SetAngle(angle);
-			skull->SetAngle(angle);
-
-			if (waiteTime > shotData.time[0])
-			{
-				actionState = ACTION::THIRD;
-				waiteTime = 0;
-				enemyObj->SetAttackFlag(true);
-			}
-			break;
-		case ACTION::THIRD:
-			waiteTime += elapsedTime;
-			skulPos.x += sinf(angle.y) * shotData.speed * elapsedTime;
-			skulPos.z += cosf(angle.y) * shotData.speed * elapsedTime;
-			skull->SetPosition(skulPos);
-			if (waiteTime > shotData.time[1])
-			{
-				if (enemyObj->GetPosition().y > 0)
+				if (!enemyObj->GetDamageFlag())enemyObj->SetAttackFlag(true);
+				for (int i = 0; i < THUNDERNUM; i++)
 				{
-					pos.y -= elapsedTime * 30;
-					enemyObj->SetPosition(pos);
+					thunderData.w[i] = 0.f;
 				}
-				else
+			}
+			if (waiteTime > thunderData.attackEndTime)
+			{
+				enemyObj->SetAttackFlag(false);
+				thunderData.exist = false;
+			}
+			if (waiteTime > thunderData.endTime)
+			{
+				if (EffectObj::GetInstance().Exist(EffectObj::TYPE::THUNDER))
 				{
-					SetWaitState();
+					EffectObj::GetInstance().Stop(EffectObj::TYPE::THUNDER);
 				}
-				enemyObj->SetShotAttackFlag(false);
-				shotData.y = -20;
+				SetChoiceState();
 			}
 			break;
 		}
+
 	}
-
-}
-void Enemy::SetAccelState()
-{
-
-}
-void Enemy::UpdateAccelState(float elapsedTime)
-{
-}
-//ノックバック
-void Enemy::SetKnockBackState()
-{
-	state = STATE::KNOCKBACK;
-}
-
-void Enemy::UpdateKnockBackState(float elapsedTime)
-{
-	float k = enemyObj->GetKnockBackSpeed();
-
-	DirectX::XMFLOAT3 pos = enemyObj->GetPosition();
-	DirectX::XMFLOAT3 dir = enemyObj->GetDirection();
-	static float t = 0;
-	t += elapsedTime;
-	if (t > enemyObj->GetKnockBackTime())
+	void Enemy::ShotAttack(float elapsedTime)
 	{
-		SetWaitState();
-		enemyObj->SetKnockBackFlag(false);
-		t = 0;
-	}
-	pos.x = pos.x + dir.x * k;
-	pos.z = pos.z + dir.z * k;
-	enemyObj->SetPosition(pos);
-}
-void Enemy::CalculateLength()
-{
-	DirectX::XMFLOAT3 pos = Camera::GetInstance().GetTargetPos();
-	pos.y = 0; //x,zでとる場合yは消しておく
-	DirectX::XMVECTOR p = DirectX::XMLoadFloat3(&pos);
-	DirectX::XMVECTOR e = DirectX::XMLoadFloat3(&enemyObj->GetPosition());
-	vec = DirectX::XMVectorSubtract(p, e);
-	dir = DirectX::XMVector3Normalize(vec);//単位ベクトル化
-	DirectX::XMVECTOR length = DirectX::XMVector3Length(vec);//正規化
-	DirectX::XMStoreFloat(&len, length);
-}
-void Enemy::CalculateDotCross()
-{
-	DirectX::XMFLOAT3 pos = Camera::GetInstance().GetTargetPos();
-	pos.y = 0; //x,zでとる場合yは消しておく
-	DirectX::XMVECTOR p = DirectX::XMLoadFloat3(&pos);
-	DirectX::XMVECTOR e = DirectX::XMLoadFloat3(&enemyObj->GetPosition());
-	vec = DirectX::XMVectorSubtract(p, e);
-	dir = DirectX::XMVector3Normalize(vec);//単位ベクトル化
+		if (enemyObj->GetDamageFlag())
+		{
+			if (enemyObj->GetPosition().y > 0)
+			{
+				pos.y -= elapsedTime * 30;
+				enemyObj->SetPosition(pos);
+			}
+			else
+			{
+				SetWaitState();
+			}
+		}
+		CalculateLength();
+		CalculateDotCross();
+		DirectX::XMFLOAT3 toPlayerAngle;
+		DirectX::XMStoreFloat3(&toPlayerAngle, vec);
+		static DirectX::XMFLOAT3 skulPos = skull->GetPosition();
+		static DirectX::XMFLOAT3 skulAngle = skull->GetAngle();
+		if (enemyObj->GetBounceFlag())
+		{
 
-	DirectX::XMFLOAT3 a = enemyObj->GetAngle();
-	DirectX::XMFLOAT3 n = DirectX::XMFLOAT3(sinf(a.y), 0, cosf(a.y));
-	DirectX::XMVECTOR vn = DirectX::XMLoadFloat3(&n);
-	vn = DirectX::XMVector3Normalize(vn);//単位ベクトル化
-	DirectX::XMVECTOR d = DirectX::XMVector3Dot(vn, dir);//内積ででるのはcosθ -180～180
-	DirectX::XMStoreFloat(&dot, d);
-	if (dot > 1)dot = 1;
-	if (dot < -1)dot = -1;
-	DirectX::XMVECTOR c = DirectX::XMVector3Cross(vn, dir);
-	DirectX::XMStoreFloat3(&cross, c);
-	//	DirectX::XMFLOAT3 pos = Camera::GetInstance().GetTargetPos();
-	//
-	//	DirectX::XMVECTOR p = DirectX::XMLoadFloat3(&pos);
-	//
-	//	DirectX::XMVECTOR d, c;
-	//
-	//	//内積を求める
-	//	DirectX::XMFLOAT3 front = enemyObj->GetFront();
-	//	DirectX::XMVECTOR f = DirectX::XMLoadFloat3(&front);
-	//
-	//	d = DirectX::XMVector3Dot(p, f);
-	//	//外積を求める
-	//	c = DirectX::XMVector3Cross(p, f);
-	//	//求めた内積をfloat型にする
-	//	
-	//	DirectX::XMStoreFloat(&dot, d);
-	//	//求めた外積をfloat3型にする
-	//	DirectX::XMStoreFloat3(&cross, c);
-}
+			DirectX::XMVECTOR skulV = DirectX::XMLoadFloat3(&skulPos);
+
+			DirectX::XMVECTOR enemyV = DirectX::XMLoadFloat3(&pos);
+			DirectX::XMVECTOR v = DirectX::XMVectorSubtract(enemyV, skulV);
+			v = DirectX::XMVector3Normalize(v);//単位ベクトル化
+
+			skulAngle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
+
+			DirectX::XMFLOAT3 vF;
+			DirectX::XMStoreFloat3(&vF, v);
+			vF = Vec3Multiply(vF, 300.f * elapsedTime);
+			skulPos = Vec3Add(skulPos, vF);
+
+			skull->SetAngle(DirectX::XMFLOAT3(skulAngle.x, -skulAngle.y, skulAngle.z));
+			skull->SetPosition(skulPos);
+		}
+		else
+		{
+			switch (actionState)
+			{
+			case ACTION::FIRST:
+				pos.y += elapsedTime * 30;
+				if (pos.y > 30)
+				{
+					actionState = ACTION::FIRSTEND;
+				}
+				enemyObj->SetPosition(pos);
+				break;
+			case ACTION::FIRSTEND:
+				shotData.y += elapsedTime * 18;
+				skull->SetPosition(DirectX::XMFLOAT3(enemyObj->GetPosition().x + enemyObj->GetFront().x * 20.f, shotData.y, enemyObj->GetPosition().z + enemyObj->GetFront().z * 20.f));
+				skulPos = skull->GetPosition();
+
+				enemyObj->SetAngle(angle);
+				EffectObj::GetInstance().SetAngle(EffectObj::TYPE::CIRCLE, angle);
+				EffectObj::GetInstance().SetPosition(EffectObj::TYPE::CIRCLE, DirectX::XMFLOAT3(pos.x + enemyObj->GetFront().x * 20.f, 0.1f, pos.z + enemyObj->GetFront().z * 20.f));
+				if (shotData.y >= 0.1f)
+				{
+					actionState = ACTION::SECOND;
+					//SetWaitState();
+				}
+				break;
+			case ACTION::SECOND:
+				waiteTime += elapsedTime;
+				if (acosf(dot) > DirectX::XMConvertToRadians(5))
+				{
+					if (cross.y < 0)
+						angle.y -= DirectX::XMConvertToRadians(180) * elapsedTime;//acosfでシータ（角度）がでる　
+					else
+						angle.y += DirectX::XMConvertToRadians(180) * elapsedTime;
+				}
+				else
+					angle.y = atan2f(toPlayerAngle.x, toPlayerAngle.z);
+
+				enemyObj->SetAngle(angle);
+				skull->SetAngle(angle);
+
+				if (waiteTime > shotData.time[0])
+				{
+					actionState = ACTION::THIRD;
+					waiteTime = 0;
+					enemyObj->SetAttackFlag(true);
+				}
+				break;
+			case ACTION::THIRD:
+				waiteTime += elapsedTime;
+				skulPos.x += sinf(angle.y) * shotData.speed * elapsedTime;
+				skulPos.z += cosf(angle.y) * shotData.speed * elapsedTime;
+				skull->SetPosition(skulPos);
+				if (waiteTime > shotData.time[1])
+				{
+					if (enemyObj->GetPosition().y > 0)
+					{
+						pos.y -= elapsedTime * 30;
+						enemyObj->SetPosition(pos);
+					}
+					else
+					{
+						SetWaitState();
+					}
+					enemyObj->SetShotAttackFlag(false);
+					shotData.y = -20;
+				}
+				break;
+			}
+		}
+
+	}
+	void Enemy::SetAccelState()
+	{
+
+	}
+	void Enemy::UpdateAccelState(float elapsedTime)
+	{
+	}
+	//ノックバック
+	void Enemy::SetKnockBackState()
+	{
+		state = STATE::KNOCKBACK;
+	}
+
+	void Enemy::UpdateKnockBackState(float elapsedTime)
+	{
+		float k = enemyObj->GetKnockBackSpeed();
+
+		DirectX::XMFLOAT3 pos = enemyObj->GetPosition();
+		DirectX::XMFLOAT3 dir = enemyObj->GetDirection();
+		static float t = 0;
+		t += elapsedTime;
+		if (t > enemyObj->GetKnockBackTime())
+		{
+			SetWaitState();
+			enemyObj->SetKnockBackFlag(false);
+			t = 0;
+		}
+		pos.x = pos.x + dir.x * k;
+		pos.z = pos.z + dir.z * k;
+		enemyObj->SetPosition(pos);
+	}
+	void Enemy::CalculateLength()
+	{
+		DirectX::XMFLOAT3 pos = Camera::GetInstance().GetTargetPos();
+		pos.y = 0; //x,zでとる場合yは消しておく
+		DirectX::XMVECTOR p = DirectX::XMLoadFloat3(&pos);
+		DirectX::XMVECTOR e = DirectX::XMLoadFloat3(&enemyObj->GetPosition());
+		vec = DirectX::XMVectorSubtract(p, e);
+		dir = DirectX::XMVector3Normalize(vec);//単位ベクトル化
+		DirectX::XMVECTOR length = DirectX::XMVector3Length(vec);//正規化
+		DirectX::XMStoreFloat(&len, length);
+	}
+	void Enemy::EffectStop()
+	{
+		EffectObj::GetInstance().Stop(EffectObj::TYPE::CHARGE);
+		EffectObj::GetInstance().Stop(EffectObj::TYPE::RUN);
+		EffectObj::GetInstance().Stop(EffectObj::TYPE::THUNDER);
+		EffectObj::GetInstance().Stop(EffectObj::TYPE::SLASHING);
+		EffectObj::GetInstance().Stop(EffectObj::TYPE::BRIBIRI);
+		EffectObj::GetInstance().Stop(EffectObj::TYPE::CIRCLE);
+	}
+	void Enemy::CalculateDotCross()
+	{
+		DirectX::XMFLOAT3 pos = Camera::GetInstance().GetTargetPos();
+		pos.y = 0; //x,zでとる場合yは消しておく
+		DirectX::XMVECTOR p = DirectX::XMLoadFloat3(&pos);
+		DirectX::XMVECTOR e = DirectX::XMLoadFloat3(&enemyObj->GetPosition());
+		vec = DirectX::XMVectorSubtract(p, e);
+		dir = DirectX::XMVector3Normalize(vec);//単位ベクトル化
+
+		DirectX::XMFLOAT3 a = enemyObj->GetAngle();
+		DirectX::XMFLOAT3 n = DirectX::XMFLOAT3(sinf(a.y), 0, cosf(a.y));
+		DirectX::XMVECTOR vn = DirectX::XMLoadFloat3(&n);
+		vn = DirectX::XMVector3Normalize(vn);//単位ベクトル化
+		DirectX::XMVECTOR d = DirectX::XMVector3Dot(vn, dir);//内積ででるのはcosθ -180～180
+		DirectX::XMStoreFloat(&dot, d);
+		if (dot > 1)dot = 1;
+		if (dot < -1)dot = -1;
+		DirectX::XMVECTOR c = DirectX::XMVector3Cross(vn, dir);
+		DirectX::XMStoreFloat3(&cross, c);
+		//	DirectX::XMFLOAT3 pos = Camera::GetInstance().GetTargetPos();
+		//
+		//	DirectX::XMVECTOR p = DirectX::XMLoadFloat3(&pos);
+		//
+		//	DirectX::XMVECTOR d, c;
+		//
+		//	//内積を求める
+		//	DirectX::XMFLOAT3 front = enemyObj->GetFront();
+		//	DirectX::XMVECTOR f = DirectX::XMLoadFloat3(&front);
+		//
+		//	d = DirectX::XMVector3Dot(p, f);
+		//	//外積を求める
+		//	c = DirectX::XMVector3Cross(p, f);
+		//	//求めた内積をfloat型にする
+		//	
+		//	DirectX::XMStoreFloat(&dot, d);
+		//	//求めた外積をfloat3型にする
+		//	DirectX::XMStoreFloat3(&cross, c);
+	}
 

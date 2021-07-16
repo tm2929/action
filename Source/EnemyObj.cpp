@@ -53,9 +53,9 @@ void EnemyObj::AttackBoneNameEditor()
 		{
 			SaveBoneNum();
 		}
-		ImGui::SliderFloat("pulsx", &pulsPos.x, -150, 150.f);
-		ImGui::SliderFloat("pulsy", &pulsPos.y, -30, 0.f);
-		ImGui::SliderFloat("pulsz", &pulsPos.z, -150, 150.f);
+		ImGui::SliderFloat("plusx", &plusPos.x, -150, 150.f);
+		ImGui::SliderFloat("plusy", &plusPos.y, -30, 0.f);
+		ImGui::SliderFloat("plusz", &plusPos.z, -150, 150.f);
 	}
 
 
@@ -65,7 +65,7 @@ void EnemyObj::HitAttackTransform()
 {
 	Model::Node attackNode = GetModel()->GetNodes()[attackBoneNum];
 
-	hitSphere.position.x = attackNode.worldTransform._41 + ((attackNode.worldTransform._31) * pulsPos.x);
-	hitSphere.position.y = attackNode.worldTransform._42 + pulsPos.y;
-	hitSphere.position.z = attackNode.worldTransform._43 + ((attackNode.worldTransform._33) * pulsPos.z);
+	hitSphere.position.x = attackNode.worldTransform._41 + ((attackNode.worldTransform._31) * plusPos.x);
+	hitSphere.position.y = attackNode.worldTransform._42 + plusPos.y;
+	hitSphere.position.z = attackNode.worldTransform._43 + ((attackNode.worldTransform._33) * plusPos.z);
 }

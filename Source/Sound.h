@@ -69,8 +69,9 @@ public:
 	};
 	enum class SOUNDTITLE
 	{
-		TITLE_BGM,//ƒQ[ƒ€BGM
+		BGM,//ƒQ[ƒ€BGM
 		ENTER,//Œˆ’è‰¹
+		SELECT,//‘I‘ğ
 		END
 	};
 	static void Create(HWND hWnd)

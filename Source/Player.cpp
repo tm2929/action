@@ -5,6 +5,7 @@
 #include "Particle.h"
 #include "VectorCombo.h"
 #include "HitAreaRnder.h"
+#include "EffectManager.h"
 #ifdef USE_IMGUI
 #include <imgui.h>
 #include <imgui_impl_dx11.h>
@@ -21,9 +22,13 @@ Player::Player(std::shared_ptr<ModelResource> resource, std::shared_ptr<ModelRes
 	weapon = std::make_unique<Weapon>(weaponResource);
 
 	playerObj->SetHitStateFlag(false);
+
+	//data初期化
 	hitData.Init();
+	jumpData.Init();
 	speedData.Init();
 	energyData.Init();
+	skillData.Init();
 	//初期設定
 	playerObj->SetPosition(DirectX::XMFLOAT3(3.0f, 0.f, 210.0f));
 	playerObj->SetScale(DirectX::XMFLOAT3(0.09f, 0.09f, 0.09f));
@@ -39,15 +44,17 @@ Player::Player(std::shared_ptr<ModelResource> resource, std::shared_ptr<ModelRes
 	//SP
 	playerObj->SetSp(energyData.sp);
 	playerObj->SetMaxSp(energyData.maxSp);
-
+	//MP
+	playerObj->SetMp(energyData.mp);
+	playerObj->SetMaxMp(energyData.maxMp);
 	//攻撃力
 	power = hitData.damage;
 	powerX = .0f;
 	powerY = .0f;
 
-	color[0] = DirectX::XMFLOAT4(1, 1, 1, 1);
-	color[1] = DirectX::XMFLOAT4(1, 1, 1, 1);//当たってない
-	color[2] = DirectX::XMFLOAT4(1, 0, 0, 1);//当たった
+	hitColor = DirectX::XMFLOAT4(1, 1, 1, 1);
+	hitFalseColor = DirectX::XMFLOAT4(1, 1, 1, 1);//当たってない
+	hitTrueColor = DirectX::XMFLOAT4(1, 0, 0, 1);//当たった
 	//移動
 	playerObj->SetAcceleration(speedData.acceleration);
 	playerObj->SetDeceleration(speedData.deceleration);
@@ -78,7 +85,7 @@ Player::Player(std::shared_ptr<ModelResource> resource, std::shared_ptr<ModelRes
 
 	playerObj->SetTrajectoryFlag(false);
 
-	animSpeed = 1.0f;
+	animSpeed = defaultSpeed;
 	for (int i = 0; i < static_cast<int>(ANIM::END); i++)
 	{
 		animSpeeds[i] = 1.0f;
@@ -93,24 +100,8 @@ void Player::Update(float elapsedTime)
 {
 	Imgui();
 
-	//死亡処理
-	if (playerObj->GetHp() <= 0) 	playerObj->SetExist(false);
-	if (!playerObj->GetExist() && state != STATE::DEATH)
-	{
-		SetDeathState();
-	}
-	//SP
-	float sp = playerObj->GetSp();
-	if (sp >= playerObj->GetMaxSp())
-	{
-		sp = playerObj->GetMaxSp();
-	}
-	else
-	{
-		sp += elapsedTime * energyData.pulsSp;
-	}
-	playerObj->SetSp(sp);
-
+	//HP,SP,MP更新処理
+	HpSpMpUpdate(elapsedTime);
 	//アニメーション更新
 	playerObj->AnimUpdate(elapsedTime * animSpeed);
 	//アニメーション時間取得
@@ -120,25 +111,26 @@ void Player::Update(float elapsedTime)
 	playerObj->HitAttackTransformIMGUI(false);
 	if (state == STATE::KICK) playerObj->HitAttackTransformIMGUI(true);
 
-	playerObj->CalculateTransform();
-	//playerObj->HitAttackTransform();
+	//playerObj->CalculateTransform();
 	playerObj->HitAreaTransform();
 
 	weapon->SetPosition(playerObj->GetHitSphere().position);
 	//軌跡
 	{
 		Model::Node node;
-		node = GetModel()->GetNodes()[47];
+		node = GetModel()->GetNodes()[trajectorynNodeNum]; //出現ノード取得
+		//軌跡位置設定
 		trajectoryEndPos.x = node.worldTransform._41;
 		trajectoryEndPos.y = node.worldTransform._42;
 		trajectoryEndPos.z = node.worldTransform._43;
 
-		trajectoryStartPos.x = trajectoryEndPos.x + ((node.worldTransform._31) * 150);
-		trajectoryStartPos.y = trajectoryEndPos.y + ((node.worldTransform._32) * 150);
-		trajectoryStartPos.z = trajectoryEndPos.z + ((node.worldTransform._33) * 150);
+		trajectoryStartPos.x = trajectoryEndPos.x + ((node.worldTransform._31) * trajectoryLen);
+		trajectoryStartPos.y = trajectoryEndPos.y + ((node.worldTransform._32) * trajectoryLen);
+		trajectoryStartPos.z = trajectoryEndPos.z + ((node.worldTransform._33) * trajectoryLen);
 	}
+	//武器更新
 	weapon->Update(elapsedTime, playerObj);
-
+	//正面取得
 	playerObj->SetFront(DirectX::XMFLOAT3(sinf(angle.y), 0.f, cosf(angle.y)));
 	switch (state)
 	{
@@ -158,6 +150,9 @@ void Player::Update(float elapsedTime)
 	case STATE::ATTACK:
 		UpdateAttackState(elapsedTime);
 		break;
+	case STATE::JUMPATTACK:
+		UpdateJumpAttackState(elapsedTime);
+		break;
 		//加速
 	case STATE::ACCEL:
 		UpdateAccelState(elapsedTime);
@@ -173,45 +168,59 @@ void Player::Update(float elapsedTime)
 	case STATE::KNOCKBACK:
 		UpdateKnockBackState(elapsedTime);
 		break;
+		//死亡
 	case STATE::DEATH:
 		UpdateDeathState(elapsedTime);
 		break;
+		//回復スキル
+	case STATE::HEAL:
+		UpdateHealState(elapsedTime);
+		break;
+		//スキル
+	case STATE::SUKILL:
+		UpdateSukillState(elapsedTime);
+		break;
+		//tst用
 	case STATE::TST:
 		break;
 	}
-	if (state != STATE::ATTACK && state != STATE::RUSH && state != STATE::KICK)
+	//攻撃時以外攻撃flag常にfalse
+	if (state != STATE::ATTACK && state != STATE::RUSH && state != STATE::JUMPATTACK)
 	{
 		playerObj->SetAttackFlag(false);
+		playerObj->SetJumpAttackFlag(false);
 	}
+	if (state != STATE::SUKILL)
+	{
+		playerObj->SetSukillHitFlag(false);
+	}
+	//ヒット時ヒットフラグtrue
 	if (state == STATE::HIT || state == STATE::KNOCKBACK)
 	{
 		playerObj->SetHitStateFlag(true);
+
 	}
 	else playerObj->SetHitStateFlag(false);
 
-	power = hitData.damage + +hitData.pulsDamage;
-	//power = 100;
-	//当たり判定表示
-	if (playerObj->GetHitFlag())
-	{
-		color[0] = color[2];
-	}
-	else
-	{
-		color[0] = color[1];
-	}
+	//攻撃力
+	power = hitData.damage +hitData.plusDamage;
+	playerObj->SetPower(power);
 
-	if (animStopFlag)
+	//当たり判定表示
+	if (playerObj->GetHitFlag()) hitColor = hitTrueColor;
+	else hitColor = hitFalseColor;
+
+	if (animStopFlag) //trueならアニメーション停止
 	{
 		animSpeed = 0;
 
 	}
-	pHitAreaRender.SetHitCylinder(playerObj->GetHitArea().min, playerObj->GetHitArea().max, playerObj->GetHitArea().area, color[0]);
-	pHitAreaRender.SetHitSphere(playerObj->GetHitSphere().position, playerObj->GetHitSphere().area, color[0]);
+	HitAreaRnder::GetInctance().SetHitCylinder(playerObj->GetHitArea().min, playerObj->GetHitArea().max, playerObj->GetHitArea().area, hitColor);
+	HitAreaRnder::GetInctance().SetHitSphere(playerObj->GetHitSphere().position, playerObj->GetHitSphere().area, hitColor);
 	//敵の攻撃がプレイヤーにあたっていたら
 	if (playerObj->GetKnockBackFlag() && playerObj->GetHitFlag())
 	{
-		if (playerObj->GetKnockBackType() == 0)
+		if (playerObj->GetKnockBackType() == 0) //ノックバックstate選択(相手の攻撃にあわせて二種選択)
 		{
 			SetHitState();
 		}
@@ -223,6 +232,9 @@ void Player::Update(float elapsedTime)
 	}
 	//常false 食らった瞬間だけtrueになるように
 	playerObj->SetHitFlag(false);
+
+	//落下処理
+	FallOff(elapsedTime);
 }
 
 void Player::Imgui()
@@ -235,20 +247,33 @@ void Player::Imgui()
 		ImGui::Text("pos.x%.f", playerObj->GetPosition().x);
 		ImGui::Text("pos.y%.f", playerObj->GetPosition().y);
 		ImGui::Text("pos.z%.f", playerObj->GetPosition().z);
+
+		ImGui::Text("pos1.x%.f", pos.x);
+		ImGui::Text("pos1.y%.f", pos.y);
+		ImGui::Text("pos1.z%.f", pos.z);
 		;
 	}
-	if (ImGui::CollapsingHeader("HP,SP"))
+	if (ImGui::CollapsingHeader("HP,SP,MP"))
 	{
 		ImGui::Text("hp%.f", playerObj->GetHp());
 		ImGui::InputFloat("HP", &energyData.hp, 1.f);
 		playerObj->SetHp(energyData.hp);
-		ImGui::InputFloat("pulsSp", &energyData.pulsSp, 1.f);
+		ImGui::InputFloat("plusSp", &energyData.plusSp, 1.f);
 		ImGui::InputFloat("dashSp", &energyData.dashSp, 1.f);
 		ImGui::InputFloat("accelSp", &energyData.accelSp, 1.f);
+		ImGui::Text("mp%.f", playerObj->GetMp());
+		ImGui::InputFloat("MP", &energyData.plusMp, 1.f);
 	}
 	ImGui::Text("state%d", state);
+	ImGui::Text("count%f", count);
 	ImGui::Text("blendTime%.f", playerObj->GetModel()->GetBlendTime());
 	ImGui::Text("blendFlag%d", playerObj->GetModel()->GetBlendFlag());
+	ImGui::Text("blendFlag%d", playerObj->GetSukillAttackFlag());
+	if (ImGui::Button(u8"sukillAttackFlag"))
+	{
+		if (playerObj->GetSukillAttackFlag()) playerObj->SetSukillAttackFlag(false);
+		else playerObj->SetSukillAttackFlag(true);
+	}
 	if (ImGui::CollapsingHeader(u8"当たり安定"))
 	{
 		ImGui::Text("attackFlag%d", playerObj->GetAttackFlag());
@@ -259,7 +284,8 @@ void Player::Imgui()
 		ImGui::Text("HitSpherey%f", playerObj->GetHitSphere().position.y);
 		ImGui::Text("HitSpherez%f", playerObj->GetHitSphere().position.z);
 		//static float foo = 1.0f;
-		ImGui::InputFloat("power", &hitData.damage, 0.1f);
+		ImGui::Text("power%f", playerObj->GetPower());
+		ImGui::InputFloat("damage", &hitData.damage, 0.1f);
 		ImGui::SliderFloat(u8"当たり判定サイズ", &hitData.hitLength, 0, 50.f);
 		playerObj->SetHitAreaLeng(hitData.hitLength);
 
@@ -269,6 +295,7 @@ void Player::Imgui()
 	}
 	ImGui::Text("attackFlag %d", playerObj->GetAttackFlag());
 	ImGui::Text("damageFlag %d", playerObj->GetDamageFlag());
+	ImGui::Text("JumpAttackFlag %d", playerObj->GetJumpAttackFlag());
 	if (ImGui::CollapsingHeader(u8"速度"))
 	{
 		if (ImGui::CollapsingHeader(u8"通常移動"))
@@ -282,6 +309,12 @@ void Player::Imgui()
 			ImGui::SliderFloat(u8"d最大速度", &speedData.dashMaxMoveSpeed, 50.f, 100.0f);
 			ImGui::SliderFloat(u8"d加速度", &speedData.dashAcceleration, 0.f, 100.f);
 			ImGui::SliderFloat(u8"d減速度", &speedData.dashDeceleration, 0.f, 100.f);
+		}
+		if (ImGui::CollapsingHeader(u8"ジャンプ攻撃"))
+		{
+			ImGui::InputFloat(u8"frontSpeed", &jumpData.frontSpeed, 0.1f);
+			ImGui::InputFloat(u8"jumpAttackTime", &jumpData.jumpAttackTime, 0.1f);
+			ImGui::InputFloat(u8"jumpInitialSpeed", &jumpData.jumpInitialSpeed, 0.1f);
 		}
 		ImGui::InputFloat(u8"waiteTime", &hitData.waiteTime, 0.1f);
 		ImGui::InputFloat(u8"加速時間", &speedData.accelTime, 0.1f);
@@ -330,9 +363,10 @@ void Player::Imgui()
 
 void Player::SetWaitState()
 {
+	animSpeed = defaultSpeed;
 	state = STATE::WAIT;
 	prevState = state;
-	animNo = static_cast<int>(ANIM::WAIT1);
+	animNo = static_cast<int>(ANIM::WAIT2);
 	playerObj->SetAnim(animNo, true);
 }
 
@@ -340,17 +374,48 @@ void Player::UpdateWaitState(float elapsedTime)
 {
 	MoveInput();
 	float power = sqrtf(powerX * powerX + powerY * powerY);
-	if (power > 0.1f)
+	//run
+	if (power > InputSensitivity)
 	{
 		SetRunState();
 	}
+	//攻撃
 	if (KeyInput::KeyTrigger() & KEY_Z || input::ButtonRisingState(0, input::PadLabel::X))
 	{
 		SetAttackState();
 	}
+	//回避
 	if (KeyInput::KeyTrigger() & KEY_X || input::ButtonRisingState(0, input::PadLabel::A))
 	{
 		SetAccelState();
+	}
+	//ジャンプ攻撃
+	if (KeyInput::KeyTrigger() & KEY_F || input::ButtonRisingState(0, input::PadLabel::Y))
+	{
+		SetJumpAttackState();
+	}
+#ifdef USE_IMGUI
+	if (KeyInput::KeyTrigger() & KEY_E)
+	{
+		SetSukillState();
+	}
+	if (KeyInput::KeyTrigger() & KEY_Q)
+	{
+		SetHealState();
+	}
+#endif
+	//MPマックス時のみ発動
+	if (playerObj->GetMpMaxFlag())
+	{
+		//スキル
+		if (KeyInput::KeyTrigger() & KEY_E || input::ButtonRisingState(0, input::PadLabel::RSHOULDER))
+		{
+			SetSukillState();
+		}
+		if (KeyInput::KeyTrigger() & KEY_Q || input::ButtonRisingState(0, input::PadLabel::LSHOULDER))
+		{
+			SetHealState();
+		}
 	}
 	//視野角変更
 	DirectX::XMVECTOR T = DirectX::XMVectorSet(0, 0, 0, 0);
@@ -365,12 +430,15 @@ void Player::SetRunState()
 	prevState = state;
 	animNo = static_cast<int>(ANIM::RUN);
 	playerObj->SetAnim(animNo, true);
-	animSpeed = 1.f;
+	animSpeed = defaultSpeed;
 	playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
 
 	playerObj->SetAcceleration(speedData.acceleration);
 	playerObj->SetDeceleration(speedData.deceleration);
 	playerObj->SetMaxMoveSpeed(speedData.maxMoveSpeed);
+
+	pos = playerObj->GetPosition();
+
 }
 
 void Player::UpdateRunState(float elapsedTime)
@@ -378,7 +446,7 @@ void Player::UpdateRunState(float elapsedTime)
 	CalculateDotCrossLength();
 	MoveInput();
 	float power = sqrtf(powerX * powerX + powerY * powerY);
-	if (power > 0.1f)
+	if (power > InputSensitivity)
 	{
 		powerX /= power;
 		powerY /= power;
@@ -390,7 +458,7 @@ void Player::UpdateRunState(float elapsedTime)
 	}
 	if (!playerObj->GetTiredFlag())
 	{
-		if (KeyInput::KeyState() & KEY_LSHIFT || input::ButtonPressedState(0, input::PadLabel::LSHOULDER))
+		if (KeyInput::KeyState() & KEY_LSHIFT || input::ButtonPressedState(0, input::PadLabel::LTRIGGER))
 		{
 			if (animNo == static_cast<int>(ANIM::RUN))
 			{
@@ -426,14 +494,10 @@ void Player::UpdateRunState(float elapsedTime)
 			playerObj->SetDeceleration(speedData.deceleration);
 			playerObj->SetMaxMoveSpeed(speedData.maxMoveSpeed);
 		}
-		if (playerObj->GetSp() > 30)
+		if (playerObj->GetSp() > energyData.tiredSp)
 			playerObj->SetTiredFlag(false);
 	}
-	if (KeyInput::KeyTrigger() & KEY_V || input::ButtonRisingState(0, input::PadLabel::X))
-	{
-		SetRushState();
-	}
-	
+	//攻撃
 	if (KeyInput::KeyTrigger() & KEY_Z || input::ButtonRisingState(0, input::PadLabel::X))
 	{
 		if (len <= 20) SetAttackState();
@@ -442,10 +506,17 @@ void Player::UpdateRunState(float elapsedTime)
 
 		else SetAttackState();
 	}
+	//回避
 	if (KeyInput::KeyTrigger() & KEY_X || input::ButtonRisingState(0, input::PadLabel::A))
 	{
 		SetAccelState();
 	}
+	//ジャンプ攻撃
+	if (KeyInput::KeyTrigger() & KEY_F || input::ButtonRisingState(0, input::PadLabel::Y))
+	{
+		SetJumpAttackState();
+	}
+
 
 	//視野角変更
 	DirectX::XMVECTOR T = DirectX::XMVectorSet(0, 0, 0, 0);
@@ -505,7 +576,7 @@ void Player::UpdateAttackState(float elapsedTime)
 	{
 	case ACTION::FIRST:
 		//一撃目
-		hitData.pulsDamage = hitData.attackPower[0];
+		hitData.plusDamage = hitData.attackPower[0];
 		hitData.stopTime[3] = hitData.stopTime[0];
 
 		playerObj->SetEnmKnockBack(0);
@@ -542,7 +613,7 @@ void Player::UpdateAttackState(float elapsedTime)
 			playerObj->SetAnim(animNo, false);
 			count = 0;
 			action = ACTION::SECOND;
-			hitData.pulsDamage = hitData.attackPower[2];
+			hitData.plusDamage = hitData.attackPower[2];
 		}
 		else if (!playerObj->GetAnimContinue())
 		{
@@ -563,7 +634,7 @@ void Player::UpdateAttackState(float elapsedTime)
 			playerObj->SetAnim(animNo, false);
 			count = 0;
 			action = ACTION::THIRD;
-			hitData.pulsDamage = hitData.attackPower[2];
+			hitData.plusDamage = hitData.attackPower[2];
 		}
 		else if (!playerObj->GetAnimContinue())
 		{
@@ -584,7 +655,7 @@ void Player::UpdateAttackState(float elapsedTime)
 			count = 0;
 			action = ACTION::THIRD;
 
-			hitData.pulsDamage = hitData.attackPower[2];
+			hitData.plusDamage = hitData.attackPower[2];
 		}
 		else if (!playerObj->GetAnimContinue())
 		{
@@ -622,15 +693,15 @@ void Player::UpdateAttackState(float elapsedTime)
 	switch (action)
 	{
 	case ACTION::FIRST:
-		if (playerObj->GetHitFlag())hitData.pulsPos = { 0,0,0 };
-		else hitData.pulsPos = { 0.5,0,0.5 };
+		if (playerObj->GetHitFlag())hitData.plusPos = { 0,0,0 };
+		else hitData.plusPos = { 0.5,0,0.5 };
 
 		hitData.count += elapsedTime;
 		if (hitData.count > 0.1)
 		{
 
-			pos.x += sinf(angle.y) * hitData.pulsPos.x;
-			pos.z += cosf(angle.y) * hitData.pulsPos.z;
+			pos.x += sinf(angle.y) * hitData.plusPos.x;
+			pos.z += cosf(angle.y) * hitData.plusPos.z;
 			playerObj->SetPosition(pos);
 
 			playerObj->SetAttackFlag(true);
@@ -639,7 +710,7 @@ void Player::UpdateAttackState(float elapsedTime)
 		break;
 
 	case ACTION::FIRSTEND:
-		hitData.pulsPos = { 0,0,0 };
+		hitData.plusPos = { 0,0,0 };
 		hitData.count = 0;
 		playerObj->SetAttackFlag(false);
 		playerObj->SetDamageFlag(false);
@@ -649,8 +720,8 @@ void Player::UpdateAttackState(float elapsedTime)
 		hitData.count += elapsedTime;
 		if (hitData.count > 0.2)
 		{
-			pos.x += sinf(angle.y) * hitData.pulsPos.x;
-			pos.z += cosf(angle.y) * hitData.pulsPos.z;
+			pos.x += sinf(angle.y) * hitData.plusPos.x;
+			pos.z += cosf(angle.y) * hitData.plusPos.z;
 			playerObj->SetPosition(pos);
 
 			playerObj->SetAttackFlag(true);
@@ -665,16 +736,16 @@ void Player::UpdateAttackState(float elapsedTime)
 		break;
 
 	case ACTION::THIRD:
-		if (playerObj->GetHitFlag())hitData.pulsPos = { 0,0,0 };
-		else hitData.pulsPos = { 0.5,0,0.5 };
+		if (playerObj->GetHitFlag())hitData.plusPos = { 0,0,0 };
+		else hitData.plusPos = { 0.5,0,0.5 };
 
 		hitData.count += elapsedTime;
 		if (hitData.count > 0.4)
 		{
 			playerObj->SetAttackFlag(true);
 
-			pos.x += sinf(angle.y) * hitData.pulsPos.x;
-			pos.z += cosf(angle.y) * hitData.pulsPos.z;
+			pos.x += sinf(angle.y) * hitData.plusPos.x;
+			pos.z += cosf(angle.y) * hitData.plusPos.z;
 			playerObj->SetPosition(pos);
 		}
 		break;
@@ -682,12 +753,106 @@ void Player::UpdateAttackState(float elapsedTime)
 		hitData.count = 0;
 		playerObj->SetAttackFlag(false);
 		playerObj->SetDamageFlag(false);
-		hitData.pulsPos = { 0,0,0 };
+		hitData.plusPos = { 0,0,0 };
 		break;
 	}
 	playerObj->SetPower(power);
 }
 #else
+void Player::SetJumpAttackState()
+{
+	action = ACTION::FIRST;
+	state = STATE::JUMPATTACK;
+	animNo = static_cast<int>(ANIM::SUKILL2);
+	playerObj->SetAnim(animNo, false);
+	count = 0;
+	playerObj->SetJumpAttackFlag(false);
+	playerObj->SetDamageFlag(false);
+	hitData.plusDamage = hitData.attackPower[2];
+}
+void Player::UpdateJumpAttackState(float elapsedTime)
+{
+	count += elapsedTime;
+	CalculateDotCrossLength();//距離、内積、外積
+	MoveInput();
+	float p = sqrtf(powerX * powerX + powerY * powerY);
+
+	if (count < attackAngleTime)
+	{
+		if (p > InputSensitivity)
+		{
+			AttackChangeAngle(elapsedTime, powerX, powerY);
+		}
+		else if (len < withinDistance) //一定距離内の場合エネミーのほうを向く
+		{
+			DirectX::XMFLOAT3 toEnemyAngle;
+			DirectX::XMStoreFloat3(&toEnemyAngle, vec);
+			angle.y = atan2f(toEnemyAngle.x, toEnemyAngle.z);
+			//向き補完
+			playerObj->SetAngle(angle);
+		}
+	}
+	switch (action)
+	{
+	case ACTION::FIRST:
+		//加速
+		CalculateDotCrossLength();
+		pos.y += jumpData.jumpInitialSpeed + jumpData.gravity * count * count;
+		if (count >= jumpData.jumpAttackTime)
+		{
+
+			if (!playerObj->GetJumpAttackFlag())//一度だけ通るように
+			{
+				playerObj->SetJumpAttackFlag(true);
+				playerObj->SetDamageFlag(false);
+			}
+		}
+		if (playerObj->GetHitFlag()) //ヒット時アニメーション振りまで
+		{
+			animTime = jumpData.jumpAttackTime;
+		}
+		else
+		{
+			if (pos.y >= 0)//前進
+			{
+				pos.x += sinf(angle.y) * jumpData.frontSpeed * elapsedTime;
+				pos.z += cosf(angle.y) * jumpData.frontSpeed * elapsedTime;
+			}
+		}
+		pos.y = pos.y <= 0 ? 0.0f : pos.y; //0以下なら0に
+
+		playerObj->SetPosition(pos);
+		playerObj->SetAngle(angle);
+		if (!playerObj->GetAnimContinue() && pos.y <= 0)
+		{
+			playerObj->SetJumpAttackFlag(false);
+
+			playerObj->GetModel()->SetBlendTime(BLENDATTACK);
+			action = ACTION::FIRSTEND;
+			animNo = static_cast<int>(ANIM::WAIT2);
+			playerObj->SetAnim(animNo, false);
+		}
+		playerObj->SetPower(power);
+		break;
+	case ACTION::FIRSTEND:
+		if (KeyInput::KeyTrigger() & KEY_X || input::ButtonRisingState(0, input::PadLabel::A)) //攻撃時、戻りモーション時のみ加速(回避)できる
+		{
+			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
+			SetAccelState();
+		}
+		if (playerObj->GetModel()->GetBlendFlag() && (KeyInput::KeyTrigger() & KEY_Z || input::ButtonRisingState(0, input::PadLabel::X)))
+		{
+			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
+			SetAttackState();
+		}
+		else if (!playerObj->GetModel()->GetBlendFlag())
+		{
+			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
+			SetWaitState();
+		}
+		break;
+	}
+}
 void Player::SetKickState()
 {
 	animNo = static_cast<int>(ANIM::KICK);
@@ -708,14 +873,14 @@ void Player::UpdateKickState(float elapsedTime)
 		animSpeeds[animNo] = 2.0f;
 	else
 		animSpeeds[animNo] = 1.6f;
-	
+
 	switch (action)
 	{
 	case Player::ACTION::FIRST:
 		if (!playerObj->GetAnimContinue())
 		{
 			//playerObj->GetModel()->SetBlendTime(30.0f);
-			animNo = static_cast<int>(ANIM::WAIT1);
+			animNo = static_cast<int>(ANIM::WAIT2);
 			playerObj->SetAnim(animNo, false);
 			action = ACTION::FIRSTEND;
 			playerObj->SetAttackFlag(false);
@@ -748,8 +913,8 @@ void Player::SetAttackState()
 	playerObj->SetAttackFlag(false);
 	state = STATE::ATTACK;
 	count = 0;
-	hitData.count = 0;
 	playerObj->SetDamageFlag(false);
+	playerObj->SetJumpAttackFlag(false);
 	pos = playerObj->GetPosition();
 	angle = playerObj->GetAngle();
 	prevState = state;
@@ -764,13 +929,14 @@ void Player::UpdateAttackState(float elapsedTime)
 	MoveInput();
 	float p = sqrtf(powerX * powerX + powerY * powerY);
 
-	if (count < 0.3f)
+	// 攻撃時少しだけ向きを変えれるように
+	if (count < attackAngleTime)
 	{
-		if (p > 0.1f)//攻撃時少しだけ向きを変えれるように
+		if (p > InputSensitivity)
 		{
 			AttackChangeAngle(elapsedTime, powerX, powerY);
 		}
-		else if (len < 100)
+		else if (len < withinDistance) //一定距離内の場合エネミーのほうを向く
 		{
 			DirectX::XMFLOAT3 toEnemyAngle;
 			DirectX::XMStoreFloat3(&toEnemyAngle, vec);
@@ -783,7 +949,7 @@ void Player::UpdateAttackState(float elapsedTime)
 	{
 	case ACTION::FIRST:
 		//一撃目
-		hitData.pulsDamage = hitData.attackPower[0];
+		hitData.plusDamage = hitData.attackPower[0];
 		hitData.stopTime[3] = hitData.stopTime[0];
 
 		playerObj->SetEnmKnockBack(0);
@@ -805,8 +971,8 @@ void Player::UpdateAttackState(float elapsedTime)
 		//攻撃から戻るモーションに
 		else if (!playerObj->GetAnimContinue())
 		{
-			playerObj->GetModel()->SetBlendTime(10.0f);
-			animNo = static_cast<int>(ANIM::WAIT1);
+			playerObj->GetModel()->SetBlendTime(BLENDATTACK);
+			animNo = static_cast<int>(ANIM::WAIT2);
 			playerObj->SetAnim(animNo, false);
 			action = ACTION::FIRSTEND;
 			//animSpeed = 1.0f;
@@ -823,6 +989,7 @@ void Player::UpdateAttackState(float elapsedTime)
 			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
 			SetAccelState();
 		}
+		//二撃目へ
 		if (playerObj->GetModel()->GetBlendFlag() && (KeyInput::KeyTrigger() & KEY_Z || input::ButtonRisingState(0, input::PadLabel::X)))
 		{
 			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
@@ -831,7 +998,7 @@ void Player::UpdateAttackState(float elapsedTime)
 			playerObj->SetAnim(animNo, false);
 			count = 0;
 			action = ACTION::SECOND;
-			hitData.pulsDamage = hitData.attackPower[2];
+			hitData.plusDamage = hitData.attackPower[2];
 			playerObj->SetAttackFlag(false);
 			//SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE2), false);
 			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING), false);
@@ -857,7 +1024,7 @@ void Player::UpdateAttackState(float elapsedTime)
 			playerObj->SetAnim(animNo, false);
 			count = 0;
 			action = ACTION::THIRD;
-			hitData.pulsDamage = hitData.attackPower[2];
+			hitData.plusDamage = hitData.attackPower[2];
 			playerObj->SetAttackFlag(false);
 			//SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE3), false);
 			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::SWING), false);
@@ -865,7 +1032,7 @@ void Player::UpdateAttackState(float elapsedTime)
 		else if (!playerObj->GetAnimContinue())
 		{
 			playerObj->GetModel()->SetBlendTime(BLENDATTACK);
-			animNo = static_cast<int>(ANIM::WAIT1);;
+			animNo = static_cast<int>(ANIM::WAIT2);;
 			playerObj->SetAnim(animNo, false);
 			action = ACTION::SECONDEND;
 			//animSpeed = 1.0f;
@@ -882,6 +1049,7 @@ void Player::UpdateAttackState(float elapsedTime)
 			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
 			SetAccelState();
 		}
+		//３撃目へ
 		if (count > hitData.attackTime && (KeyInput::KeyTrigger() & KEY_Z || input::ButtonRisingState(0, input::PadLabel::X)))
 		{
 			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
@@ -889,7 +1057,7 @@ void Player::UpdateAttackState(float elapsedTime)
 			playerObj->SetAnim(animNo, false);
 			count = 0;
 			action = ACTION::THIRD;
-			hitData.pulsDamage = hitData.attackPower[2];
+			hitData.plusDamage = hitData.attackPower[2];
 			playerObj->SetAttackFlag(false);
 			//SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::ATTACK_VOICE3), false);
 		}
@@ -909,7 +1077,7 @@ void Player::UpdateAttackState(float elapsedTime)
 		if (!playerObj->GetAnimContinue())
 		{
 			playerObj->GetModel()->SetBlendTime(BLENDATTACK);
-			animNo = static_cast<int>(ANIM::WAIT1);
+			animNo = static_cast<int>(ANIM::WAIT2);
 			playerObj->SetAnim(animNo, false);
 			action = ACTION::THIRDEND;
 			//animSpeed = 1.0f;
@@ -930,85 +1098,87 @@ void Player::UpdateAttackState(float elapsedTime)
 		break;
 	}
 	//攻撃当たり判定適用
-	switch (action)
+	if (state == STATE::ATTACK)
 	{
-	case ACTION::FIRST:
-		if (playerObj->GetHitFlag())hitData.pulsPos = { 0,0,0 };
-		else hitData.pulsPos = { 30.f,0.f,30.f };
-		if (animTime < 0.4f)
+		switch (action)
 		{
-			animSpeeds[animNo] = 2.0f;
-		}
-		else
-		{
-			animSpeeds[animNo] = 1.5f;
-		}
-		if (count > 0.1)
-		{
-			pos.x += sinf(angle.y) * hitData.pulsPos.x * elapsedTime;
-			pos.z += cosf(angle.y) * hitData.pulsPos.z * elapsedTime;
-			playerObj->SetPosition(pos);
+		case ACTION::FIRST:
+			if (playerObj->GetHitFlag())hitData.plusPos = { 0,0,0 };
+			else hitData.plusPos = hitData.firstPlusPos;
+			if (animTime < hitData.firstAnimTime)//振り始め
+			{
+				animSpeeds[animNo] = hitData.firstAnimSpeed[0];
+			}
+			else //それ以降
+			{
+				animSpeeds[animNo] = hitData.firstAnimSpeed[1];
+			}
+			if (count > hitData.firstHitStartTime)
+			{
+				pos.x += sinf(angle.y) * hitData.plusPos.x * elapsedTime;
+				pos.z += cosf(angle.y) * hitData.plusPos.z * elapsedTime;
+				playerObj->SetPosition(pos);
 
-			if (!playerObj->GetAttackFlag())//一度だけ通るように
-			{
-				playerObj->SetAttackFlag(true);
-				playerObj->SetDamageFlag(false);
+				if (!playerObj->GetAttackFlag())//一度だけ通るように
+				{
+					playerObj->SetAttackFlag(true);
+					playerObj->SetDamageFlag(false);
+				}
 			}
-		}
-		break;
-	case ACTION::FIRSTEND:
-		hitData.pulsPos = { 0,0,0 };
-		playerObj->SetAttackFlag(false);
-		playerObj->SetDamageFlag(false);
-		break;
-	case ACTION::SECOND:
-		if (count >= 0.4)
-		{
-			animSpeeds[animNo] = 0.8f;
-			//pos.x += sinf(angle.y) * hitData.pulsPos.x;
-			//pos.z += cosf(angle.y) * hitData.pulsPos.z;
-			playerObj->SetPosition(pos);
-			if (!playerObj->GetAttackFlag())//一度だけ通るように
-			{
-				playerObj->SetAttackFlag(true);
-				playerObj->SetDamageFlag(false);
-			}
-		}
-		else
-		{
-			animSpeeds[animNo] = 1.0f;
-		}
-		break;
-	case ACTION::SECONDEND:
-		playerObj->SetAttackFlag(false);
-		playerObj->SetDamageFlag(false);
-		break;
-	case ACTION::THIRD:
-		if (playerObj->GetHitFlag())hitData.pulsPos = { 0,0,0 };
-		else hitData.pulsPos = { 20.f,0.f,20.f };
-		if (count > 0.8)
-		{
+			break;
+		case ACTION::FIRSTEND:
+			hitData.plusPos = { 0,0,0 };
 			playerObj->SetAttackFlag(false);
-		}
-		else if (count >= 0.4)
-		{
-			pos.x += sinf(angle.y) * hitData.pulsPos.x * elapsedTime;
-			pos.z += cosf(angle.y) * hitData.pulsPos.z * elapsedTime;
-			playerObj->SetPosition(pos);
-			if (!playerObj->GetAttackFlag())//一度だけ通るように
+			playerObj->SetDamageFlag(false);
+			break;
+		case ACTION::SECOND:
+			if (count >= hitData.secondHitStartTime)
 			{
-				playerObj->SetAttackFlag(true);
-				playerObj->SetDamageFlag(false);
+				animSpeeds[animNo] = hitData.secondAnimSpeed[0];
+				//pos.x += sinf(angle.y) * hitData.plusPos.x;
+				//pos.z += cosf(angle.y) * hitData.plusPos.z;
+				playerObj->SetPosition(pos);
+				if (!playerObj->GetAttackFlag())//一度だけ通るように
+				{
+					playerObj->SetAttackFlag(true);
+					playerObj->SetDamageFlag(false);
+				}
 			}
+			else
+			{
+				animSpeeds[animNo] = hitData.secondAnimSpeed[1];
+			}
+			break;
+		case ACTION::SECONDEND:
+			playerObj->SetAttackFlag(false);
+			playerObj->SetDamageFlag(false);
+			break;
+		case ACTION::THIRD:
+			if (playerObj->GetHitFlag())hitData.plusPos = { 0,0,0 };
+			else hitData.plusPos = hitData.thirdPlusPos;
+			if (count > hitData.thirdHitEndTime)
+			{
+				playerObj->SetAttackFlag(false);
+			}
+			else if (count >= hitData.thirdHitStartTime)
+			{
+				pos.x += sinf(angle.y) * hitData.plusPos.x * elapsedTime;
+				pos.z += cosf(angle.y) * hitData.plusPos.z * elapsedTime;
+				playerObj->SetPosition(pos);
+				if (!playerObj->GetAttackFlag())//一度だけ通るように
+				{
+					playerObj->SetAttackFlag(true);
+					playerObj->SetDamageFlag(false);
+				}
+			}
+			break;
+		case ACTION::THIRDEND:
+			playerObj->SetAttackFlag(false);
+			playerObj->SetDamageFlag(false);
+			hitData.plusPos = { 0,0,0 };
+			playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
+			break;
 		}
-		break;
-	case ACTION::THIRDEND:
-		hitData.count = 0;
-		playerObj->SetAttackFlag(false);
-		playerObj->SetDamageFlag(false);
-		hitData.pulsPos = { 0,0,0 };
-		playerObj->GetModel()->SetBlendTime(BLENDNORMAL);
-		break;
 	}
 	playerObj->SetPower(power);
 }
@@ -1095,8 +1265,7 @@ void Player::SetRushState()
 	animNo = static_cast<int>(ANIM::ATTACK4);
 	playerObj->SetAnim(animNo, false);
 	count = 0;
-	hitData.count = 0;
-	hitData.pulsPos = { 100.0,0,100.0 };
+	hitData.plusPos = { 100.0,0,100.0 };
 
 	if (!playerObj->GetAttackFlag())//一度だけ通るように
 	{
@@ -1108,7 +1277,7 @@ void Player::SetRushState()
 }
 void Player::UpdateRushState(float elapsedTime)
 {
-	hitData.count += elapsedTime;
+	count += elapsedTime;
 	DirectX::XMVECTOR T = DirectX::XMVectorSet(0, 0, 0, 0);
 	float a = angle.y;
 	switch (action)
@@ -1129,13 +1298,13 @@ void Player::UpdateRushState(float elapsedTime)
 		DirectX::XMStoreFloat(&angle.y, T);
 		if (!playerObj->GetHitFlag())
 		{
-			if (hitData.count <= 0.8)
+			if (count <= hitData.thirdHitEndTime)
 			{
-				if (playerObj->GetHitFlag())hitData.pulsPos = { 0,0,0 };
-				else hitData.pulsPos = { 100.0,0,100.0 };
+				if (playerObj->GetHitFlag())hitData.plusPos = { 0,0,0 };
+				else hitData.plusPos = hitData.rushPlusPos;
+				pos.x += sinf(angle.y) * hitData.plusPos.x * elapsedTime;
+				pos.z += cosf(angle.y) * hitData.plusPos.z * elapsedTime;
 
-				pos.x += sinf(angle.y) * hitData.pulsPos.x * elapsedTime;
-				pos.z += cosf(angle.y) * hitData.pulsPos.z * elapsedTime;
 			}
 			else
 			{
@@ -1158,7 +1327,7 @@ void Player::UpdateRushState(float elapsedTime)
 		{
 			playerObj->GetModel()->SetBlendTime(BLENDATTACK);
 			action = ACTION::FIRSTEND;
-			animNo = static_cast<int>(ANIM::WAIT1);
+			animNo = static_cast<int>(ANIM::WAIT2);
 			playerObj->SetAnim(animNo, false);
 		}
 		break;
@@ -1232,12 +1401,13 @@ void Player::SetAccelState()
 	count = 0;
 	animNo = static_cast<int>(ANIM::ACCEL);
 	playerObj->SetAnim(animNo, false);
+	animSpeed = animSpeeds[animNo];
 	for (int i = 0; i < 40; i++)
 	{
 		pParticleManager->Add_Board(std::make_shared<ParticleAccel>(), pParticleManager->Lp, playerObj->GetPosition());
 	}
 
-	playerObj->SetAccelTime(2.f);
+	playerObj->SetAccelTime(speedData.accelTime);
 	playerObj->SetAccelSpeed(speedData.accelSpeed);
 
 	playerObj->SetSp(playerObj->GetSp() - energyData.accelSp);
@@ -1259,7 +1429,6 @@ void Player::UpdateAccelState(float elapsedTime)
 	else
 	{
 		SetWaitState();
-		animSpeed = 1.f;
 		playerObj->SetAccelFlag(false);
 	}
 }
@@ -1345,7 +1514,198 @@ void Player::UpdateDeathState(float elapsedTime)
 {
 	if (!playerObj->GetAnimContinue())
 	{
-		pFadeOut.MoveStart();
+		FadeOut::GetInctence().MoveStart();
+	}
+}
+void Player::SetHealState()
+{
+	EffectObj::GetInstance().SetScale(EffectObj::TYPE::HEAL, DirectX::XMFLOAT3(5, 5, 5));
+	EffectObj::GetInstance().SetColor(EffectObj::TYPE::HEAL, DirectX::XMFLOAT4(1, 1, 1, 1));
+	EffectObj::GetInstance().SetPosition(EffectObj::TYPE::HEAL, playerObj->GetPosition());
+	EffectObj::GetInstance().Play(EffectObj::TYPE::HEAL);
+
+	state = STATE::HEAL;
+	animNo = static_cast<int>(ANIM::HEAL);
+	playerObj->SetAnim(animNo, false);
+	playerObj->SetMpCount(0);
+	playerObj->SetMp(0);
+	count = 0;
+}
+void Player::UpdateHealState(float elapsedTime)
+{
+	count += elapsedTime;
+	float hp = playerObj->GetHp();
+	if (hp >= playerObj->GetMaxHp())
+	{
+		hp = playerObj->GetMaxHp();
+	}
+	else
+	{
+		hp += energyData.plusHp * elapsedTime;
+	}
+	playerObj->SetHp(hp);
+	if (count < skillData.healAnimTime[0]) //構えるまでの時間
+	{
+		animSpeed = skillData.healAnimSpeed[0];
+	}
+	else if (count < skillData.healAnimTime[1])//構えてから少し動いてる時間
+	{
+		animSpeed = skillData.healAnimSpeed[1];
+	}
+	else if (count < skillData.healAnimTime[2]) //完全ストップ
+	{
+		animSpeed = 0; //アニメーション停止
+	}
+	else
+	{
+		if (animNo == static_cast<int>(ANIM::HEAL))
+		{
+			playerObj->GetModel()->SetBlendTime(BLENDATTACK);
+			animNo = static_cast<int>(ANIM::WAIT2);
+			playerObj->SetAnim(animNo, false);
+		}
+		else
+		{
+			if (skillData.stateChangeTime < animTime)
+			{
+				SetWaitState();
+			}
+		}
+
+	}
+}
+void Player::SetSukillState()
+{
+	state = STATE::SUKILL;
+	animNo = static_cast<int>(ANIM::HEAL);
+	playerObj->SetAnim(animNo, false);
+	playerObj->SetSukillAttackFlag(true);
+	count = 0;
+	action = ACTION::FIRST;
+	sukillCount = SUKILLCOUNT::ATTACK1;
+	SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::THUNDER1), false);
+	hitData.plusDamage = hitData.sukillPower;
+	playerObj->SetAccelFlag(true); //enemy攻撃防止
+	playerObj->SetMpCount(0);
+	playerObj->SetMp(0);
+
+	EffectObj::GetInstance().SetScale(EffectObj::TYPE::PLAYERCHARGE, DirectX::XMFLOAT3(5, 5, 5));
+	EffectObj::GetInstance().SetColor(EffectObj::TYPE::PLAYERCHARGE, DirectX::XMFLOAT4(1, 1, 1, 1));
+	EffectObj::GetInstance().SetPosition(EffectObj::TYPE::PLAYERCHARGE, DirectX::XMFLOAT3(playerObj->GetPosition().x, playerObj->GetPosition().y, playerObj->GetPosition().z));
+	EffectObj::GetInstance().Play(EffectObj::TYPE::PLAYERCHARGE);
+}
+void Player::UpdateSukillState(float elapsedTime)
+{
+	switch (action)
+	{
+	case ACTION::FIRST: // 発動前構え
+		count += elapsedTime;
+		//剣光らす
+		sukillColor.x = OutSine(count, skillData.sukillAnimTime[1], sukillMaxColor, 0);
+		sukillColor.w = OutSine(count, skillData.sukillAnimTime[1], sukillMaxColor, 0);
+		playerObj->SetSukillColor(sukillColor);
+
+		if (count < skillData.sukillAnimTime[0]) //構えるまでの時間
+		{
+			animSpeed = skillData.sukillAnimSpeed[0];
+		}
+		else if (count < skillData.sukillAnimTime[1])//構えてから少し動いてる時間
+		{
+			animSpeed = skillData.sukillAnimSpeed[1];
+		}
+		else //完全ストップ
+		{
+			animSpeed = 0;
+			if (/*!Camera::GetInstance().GetSukillEnemyFocusFlag() &&*/ !Camera::GetInstance().GetSukillEndFlag())
+			{
+				Camera::GetInstance().SetSukillEnemyFocusFlag(true);
+				EffectObj::GetInstance().SetScale(EffectObj::TYPE::SUKILL, DirectX::XMFLOAT3(5, 5, 5));
+				EffectObj::GetInstance().SetColor(EffectObj::TYPE::SUKILL, DirectX::XMFLOAT4(1, 1, 1, 1));
+				EffectObj::GetInstance().SetPosition(EffectObj::TYPE::SUKILL, DirectX::XMFLOAT3(Camera::GetInstance().GetEnemyPos().x, Camera::GetInstance().GetEnemyPos().y - 20, Camera::GetInstance().GetEnemyPos().z));
+				EffectObj::GetInstance().Play(EffectObj::TYPE::SUKILL);
+
+				EffectObj::GetInstance().Stop(EffectObj::TYPE::PLAYERCHARGE);
+				action = ACTION::SECOND;
+				count = 0;
+			}
+		}
+		break;
+
+	case ACTION::SECOND:
+
+		switch (sukillCount)
+		{
+		case SUKILLCOUNT::ATTACK1:
+			count += elapsedTime;
+			if (skillData.sukillEffectTime[0] < count)
+			{
+				playerObj->SetSukillHitFlag(true);
+				playerObj->SetDamageFlag(false);
+				count = 0;
+				sukillCount = SUKILLCOUNT::ATTACK2;
+			}
+			break;
+		case SUKILLCOUNT::ATTACK2:
+			count += elapsedTime;
+			if (skillData.sukillEffectTime[1] < count)
+			{
+				playerObj->SetSukillHitFlag(true);
+				playerObj->SetDamageFlag(false);
+				count = 0;
+				sukillCount = SUKILLCOUNT::ATTACK3;
+			}
+			break;
+		case SUKILLCOUNT::ATTACK3:
+			count += elapsedTime;
+			if (skillData.sukillEffectTime[2] < count)
+			{
+				playerObj->SetSukillHitFlag(true);
+				playerObj->SetDamageFlag(false);
+				count = 0;
+				sukillCount = SUKILLCOUNT::ATTACK4;
+			}
+			break;
+		case SUKILLCOUNT::ATTACK4:
+			count += elapsedTime;
+			if (skillData.sukillEffectTime[3] < count)
+			{
+				playerObj->SetSukillHitFlag(true);
+				playerObj->SetDamageFlag(false);
+				count = 0;
+				sukillCount = SUKILLCOUNT::ATTACK5;
+			}
+			break;
+		case SUKILLCOUNT::ATTACK5:
+			count += elapsedTime;
+			if (skillData.sukillEffectTime[4] < count)
+			{
+				playerObj->SetSukillHitFlag(true);
+				playerObj->SetDamageFlag(false);
+				count = 0;
+			}
+			break;
+
+		}
+	}
+	if (Camera::GetInstance().GetSukillEndFlag())
+	{
+		playerObj->SetSukillAttackFlag(false);
+		SetWaitState();
+		EffectObj::GetInstance().Stop(EffectObj::TYPE::TST);
+
+		sukillColor.x = defaultColor;
+		sukillColor.w = defaultColor;
+		playerObj->SetSukillColor(sukillColor);
+		playerObj->SetAccelFlag(false);
+	}
+}
+
+void Player::FallOff(float elapsedTime)
+{
+	if (pos.y > 0 && state != STATE::JUMPATTACK)//ジャンプ攻撃時以外落下
+	{
+		pos.y -= elapsedTime * jumpData.hitGravity;
+		playerObj->SetPosition(pos);
 	}
 }
 void Player::MoveInput()
@@ -1519,6 +1879,48 @@ void Player::CalculateDotCrossLength()
 
 	DirectX::XMVECTOR c = DirectX::XMVector3Cross(vn, dir);
 	DirectX::XMStoreFloat3(&cross, c);
+}
+void Player::HpSpMpUpdate(float elapsedTime)
+{
+	//死亡処理
+	if (playerObj->GetHp() <= 0) 	playerObj->SetExist(false);
+	if (!playerObj->GetExist() && state != STATE::DEATH)
+	{
+		SetDeathState();
+	}
+	//SP
+	float sp = playerObj->GetSp();
+	if (sp >= playerObj->GetMaxSp())
+	{
+		sp = playerObj->GetMaxSp();
+	}
+	else
+	{
+		sp += elapsedTime * energyData.plusSp;
+	}
+	playerObj->SetSp(sp);
+	//mp
+	float mp = playerObj->GetMp();
+	if (mp >= playerObj->GetMaxMp())
+	{
+		if (!playerObj->GetMpMaxFlag())
+		{
+			EffectObj::GetInstance().SetScale(EffectObj::TYPE::MPMAX, DirectX::XMFLOAT3(5, 13, 7));
+			EffectObj::GetInstance().SetColor(EffectObj::TYPE::MPMAX, DirectX::XMFLOAT4(1, 1, 1, 1));
+			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::MPMAX, DirectX::XMFLOAT3(playerObj->GetPosition().x, playerObj->GetPosition().y + 8, playerObj->GetPosition().z));
+			EffectObj::GetInstance().Play(EffectObj::TYPE::MPMAX);
+		}
+		mp = playerObj->GetMaxMp();
+		playerObj->SetMpMaxFlag(true);
+		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::MPMAX, DirectX::XMFLOAT3(playerObj->GetPosition().x, playerObj->GetPosition().y + 8, playerObj->GetPosition().z));
+	}
+	else
+	{
+		mp = playerObj->GetMpCount() * energyData.plusMp;
+		playerObj->SetMpMaxFlag(false);
+		if (EffectObj::GetInstance().Exist(EffectObj::TYPE::MPMAX)) EffectObj::GetInstance().Stop(EffectObj::TYPE::MPMAX);
+	}
+	playerObj->SetMp(mp);
 }
 void Player::LoadAnimSpeed()
 {

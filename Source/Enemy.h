@@ -16,9 +16,9 @@ public:
 	std::shared_ptr<EnemyObj> GetObj() { return enemyObj; }
 	EnemyThunderData GetThunderData() { return thunderData; }
 	std::shared_ptr<Character> GetRAttackObj1() { return rAttackObj1; }
-	float GetEffectColorW1()const { return effectColorW1; }
+	float GetEffectColorW1()const { return rAttackData.effectColorW1; }
 	std::shared_ptr<Character> GetRAttackObj2() { return rAttackObj2; }
-	float GetEffectColorW2()const { return effectColorW2; }
+	float GetEffectColorW2()const { return rAttackData.effectColorW1; }
 	std::shared_ptr<Character> GetSkull() { return skull; }
 
 	bool attackStartFlag = false;//戦闘開始フラグ
@@ -37,6 +37,7 @@ private:
 		TELEPORTATION,//瞬間移動
 		FALL,//obj落下
 		DOWN,
+		PLAYERSUKILLDOWN,//プレイヤースキル時
 		DEATH
 
 	}; STATE state;
@@ -111,12 +112,12 @@ private:
 	//戦闘開始時挙動
 	void SetFirstState();
 	void UpdateFirstState(float elapsedTime);
-	//落下
-	void SetFallState();
-	void UpdateFallState(float elapsedTime);
 	//down
 	void SetDownState();
 	void UpdateDownState(float elapsedTime);
+	//playerスキルヒット時	
+	void SetPlayerSukillDownState();
+	void UpdatePlayerSukillDownState(float elapsedTime);
 	//死亡
 	void SetDeathState();
 	void UpdateDeathState(float elapsedTime);
@@ -141,7 +142,8 @@ private:
 		THIRD,
 	};
 	ACTION actionState;
-
+	//enemyで使うエフェクト(mist以外)停止
+	void EffectStop();
 	//playerとの内積,外積を求める
 	void CalculateDotCross();
 	//playerとの距離を求める
@@ -159,11 +161,7 @@ private:
 	//RATTACK時エフェクト
 	std::shared_ptr<Character>rAttackObj1;
 	std::shared_ptr<Character>rAttackObj2;
-	float easingScale1 = 30;
-	float easingScale2 = 30;
-	float easingColor = 4.f;
-	float effectColorW1 = 1;
-	float effectColorW2 = 1;
+
 
 	std::shared_ptr<Character>skull;
 	EnemyHitData	hitData;
@@ -172,6 +170,7 @@ private:
 	EnemySpeedData  speedData;
 	EnemyThunderData thunderData;
 	EnemyShotData shotData;
+	EnemyRAttackData rAttackData;
 	int animNo = 0;
 	DirectX::XMFLOAT4 color[3];//当たり判定色
 	float waiteTime;

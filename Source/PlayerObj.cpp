@@ -87,9 +87,9 @@ void PlayerObj::AttackBoneNameEditor()
 		{
 			n = LoadKickBoneNum();
 		}
-		ImGui::InputFloat("pulsx", &pulsPos.x, 10.f);
-		ImGui::InputFloat("pulsy", &pulsPos.y, 1.f);
-		ImGui::InputFloat("pulsz", &pulsPos.z, 10.f);
+		ImGui::InputFloat("plusx", &plusPos.x, 10.f);
+		ImGui::InputFloat("plusy", &plusPos.y, 1.f);
+		ImGui::InputFloat("plusz", &plusPos.z, 10.f);
 	}
 #endif
 }
@@ -128,16 +128,16 @@ void PlayerObj::HitAttackTransformIMGUI(bool kickFlag )
 	if (kickFlag)
 	{
 		 node = GetModel()->GetNodes()[kickBoneNum];
-		 pulsPos = { 0,0,0 };
+		 plusPos = { 0,0,0 };
 	}
 	else
 	{
 		 node = GetModel()->GetNodes()[attackBoneNum];
-		 pulsPos = { 110,100,110 };
+		 plusPos = { 110,100,110 };
 	}
 
 
-	hitSphere.position.x = node.worldTransform._41 + ((node.worldTransform._31) * pulsPos.x);
-	hitSphere.position.y = node.worldTransform._42 + ((node.worldTransform._32) * pulsPos.y);
-	hitSphere.position.z = node.worldTransform._43 + ((node.worldTransform._33) * pulsPos.z);
+	hitSphere.position.x = node.worldTransform._41 + ((node.worldTransform._31) * plusPos.x);
+	hitSphere.position.y = node.worldTransform._42 + ((node.worldTransform._32) * plusPos.y);
+	hitSphere.position.z = node.worldTransform._43 + ((node.worldTransform._33) * plusPos.z);
 }

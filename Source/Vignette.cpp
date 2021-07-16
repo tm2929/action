@@ -29,7 +29,7 @@ void Vignette::Render(ID3D11DeviceContext* immediate_context, ID3D11ShaderResour
 
 	immediate_context->PSSetShader(pixelShader.Get(), 0, 0);
 	immediate_context->PSSetShaderResources(0, 1, &hdr_texture);
-	fullscreenQuad->Blit(immediate_context);
+	fullscreenQuad->Blit(immediate_context);//“]‘—
 	immediate_context->PSSetShaderResources(0, 1, &nullShaderResourceView);
 
 	framebuffer->Deactivate(immediate_context);

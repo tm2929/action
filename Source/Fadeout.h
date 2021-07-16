@@ -23,4 +23,3 @@ private:
 	bool moveFlag;
 	float colorW;
 };
-#define pFadeOut (FadeOut::GetInctence())

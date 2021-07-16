@@ -21,12 +21,12 @@ extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wparam
 
 bool SceneGame::IsNowLoading()
 {
-		if (loading_thread && loading_mutex.try_lock())
-		{
-			loading_mutex.unlock();
-			return false;
-		}
-		return true;
+	if (loading_thread && loading_mutex.try_lock())
+	{
+		loading_mutex.unlock();
+		return false;
+	}
+	return true;
 }
 
 void SceneGame::EndLoading()
@@ -108,21 +108,12 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 			pLoadModel.Create();
 			//	pLoadModel.Load(device, "Data/fbx/player04.fbx", "Player");
 			pLoadModel.Load(device, "Data/fbx/tstStage/3/mobile_skull_09_1.fbx", "Skull");
-			pLoadModel.Load(device, "Data/fbx/player1/player1.mdl", "Player");
+			pLoadModel.Load(device, "Data/fbx/player1/player2.mdl", "Player");
 			pLoadModel.Load(device, "Data/fbx/player1/weapon2.fbx", "PlayerWeapon");
 			//	pLoadModel.Load(device, "Data/mdl/tst/mdl/tst.mdl", "TSTPLAYER");
 				//pLoadModel.Load(device, "Data/fbx/ttt.mdl", "TSTPLAYER");
 			pLoadModel.Load(device, "Data/fbx/enemy/enemy04.fbx", "Enemy");
 			pLoadModel.Load(device, "Data/fbx/Rattack.fbx", "Rattack");
-
-		/*	tstbox = std::make_unique<Character>(pLoadModel.GetModelResource("tst"));
-			tstbox->SetPosition(DirectX::XMFLOAT3(0.0f, 5.0f, 0.0f));
-			tstbox->SetScale(DirectX::XMFLOAT3(5.0f, 5.0f, 5.0f));
-			tstbox->SetAngle(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
-			tstbox1 = std::make_unique<Character>(pLoadModel.GetModelResource("tst"));
-			tstbox1->SetPosition(DirectX::XMFLOAT3(0.0f, 5.0f, 0.0f));
-			tstbox1->SetScale(DirectX::XMFLOAT3(5.0f, 5.0f, 5.0f));
-			tstbox1->SetAngle(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));*/
 
 			tstStage = std::make_shared<Stage>(device);
 
@@ -145,7 +136,12 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 			//SP
 			playerSp = std::make_unique<Ui>(device, L"Data/images/PlayerSp01.png");
 			playerSpMax = std::make_unique<Sprite>(device, L"Data/images/PlayerSpFrame01.png");
-
+			//MP
+			playerMp = std::make_unique<Ui>(device, L"Data/images/PlayerSp01.png");
+			playerMpMax = std::make_unique<Sprite>(device, L"Data/images/PlayerSpFrame01.png");
+			//sukillIcon
+			sukillIconTex = std::make_unique<Sprite>(device, L"Data/images/skill_icon_02.png");
+			healIconTex = std::make_unique<Sprite>(device, L"Data/images/heal_icon.png");
 			//背景
 			skyTexture = std::make_shared<Texture>();
 			skyTexture->Load(device, L"Data/images/aaas.jpg");
@@ -168,9 +164,9 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 
 			LightInit(device);
 			modelRenderer = std::make_unique<ModelRenderer>(device, false);
-			EfectModelRenderer = std::make_unique<ModelRenderer>(device, true);
+			EffectModelRenderer = std::make_unique<ModelRenderer>(device, true);
 			pParticleManager->Create(device);
-			pHitAreaRender.Create(device);
+			HitAreaRnder::GetInctance().Create(device);
 
 			AttackLine::GetInctance().Create(device);
 			vibrationRange = 0.01f;
@@ -196,7 +192,6 @@ SceneGame::SceneGame(ID3D11Device* device, HWND hwnd)
 
 #endif // USE_IMGUI
 
-	//エフェクトテスト
 	{
 		EffectObj::GetInstance().Create();
 		EffectObj::GetInstance().Init(device);
@@ -214,22 +209,22 @@ void SceneGame::Imgui()
 	ImGui::ColorEdit3(u8"軌跡色", (float*)&trajectoryColor);
 	trajectory->SetColor(trajectoryColor);
 	ImGui::ShowDemoWindow();
-
+	ImGui::Text("mpMaxColorW%.f", mpMaxColorW);
 	if (ImGui::CollapsingHeader("SCENE"))
 	{
 		if (ImGui::Button("title_open"))
 		{
-			pFadeOut.MoveStart();
+			FadeOut::GetInctence().MoveStart();
 		}
 		if (ImGui::Button("clear_open"))
 		{
 			bossEnemy->GetObj()->SetExist(false);
-			pFadeOut.MoveStart();
+			FadeOut::GetInctence().MoveStart();
 		}
 		if (ImGui::Button("over_open"))
 		{
 			player->GetObj()->SetExist(false);
-			pFadeOut.MoveStart();
+			FadeOut::GetInctence().MoveStart();
 		}
 	}
 	if (ImGui::Button(u8"当たり判定表示"))
@@ -306,21 +301,51 @@ void SceneGame::Imgui()
 		{
 			// エフェクトの再生
 
-			EffectObj::GetInstance().SetScale(EffectObj::TYPE::SUKILL, tstScale);
-			EffectObj::GetInstance().SetColor(EffectObj::TYPE::SUKILL, tstColor);
-			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::SUKILL, player->GetTrajectoryStartPosition());
-			EffectObj::GetInstance().Play(EffectObj::TYPE::SUKILL);
+			EffectObj::GetInstance().SetScale(EffectObj::TYPE::MPMAX, tstScale);
+			EffectObj::GetInstance().SetColor(EffectObj::TYPE::MPMAX, tstColor);
+			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::MPMAX, DirectX::XMFLOAT3(player->GetObj()->GetPosition().x + tstPos.x, player->GetObj()->GetPosition().y + tstPos.y, player->GetObj()->GetPosition().z + tstPos.z));
+			EffectObj::GetInstance().Play(EffectObj::TYPE::MPMAX);
+			//e.Play(EffectObj::TYPE::BLACK););
+		}
+		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::MPMAX, DirectX::XMFLOAT3(player->GetObj()->GetPosition().x + tstPos.x, player->GetObj()->GetPosition().y + tstPos.y, player->GetObj()->GetPosition().z + tstPos.z));
+		if (ImGui::Button("TST2"))
+		{
+			// エフェクトの再生
+
+			EffectObj::GetInstance().SetScale(EffectObj::TYPE::HEAL, tstScale);
+			EffectObj::GetInstance().SetColor(EffectObj::TYPE::HEAL, tstColor);
+			EffectObj::GetInstance().SetPosition(EffectObj::TYPE::HEAL, DirectX::XMFLOAT3(player->GetObj()->GetPosition().x + tstPos.x, player->GetObj()->GetPosition().y + tstPos.y, player->GetObj()->GetPosition().z + tstPos.z));
+			EffectObj::GetInstance().Play(EffectObj::TYPE::HEAL);
 			//e.Play(EffectObj::TYPE::BLACK););
 		}
 		if (ImGui::Button("stopeffect"))
 		{
 			// エフェクトの停止
-			EffectObj::GetInstance().Stop(EffectObj::TYPE::BLACKMIST);
+			EffectObj::GetInstance().Stop(EffectObj::TYPE::MPMAX);
+		}
+		if (ImGui::Button("stopeffect2"))
+		{
+			// エフェクトの停止
+			EffectObj::GetInstance().Stop(EffectObj::TYPE::HEAL);
 		}
 	}
 	//カメラ
 	if (ImGui::CollapsingHeader("CAMERA"))
 	{
+
+		if (ImGui::CollapsingHeader(u8"スキル時カメラ"))
+		{
+			static DirectX::XMFLOAT3 sukillLen;
+			ImGui::InputFloat("sukillLen_x", &sukillLen.x, 1.f);
+			ImGui::InputFloat("sukillLen_y", &sukillLen.y, 1.f);
+			ImGui::InputFloat("anglex", &Camera::GetInstance().angle.x, 0.1f);
+			ImGui::InputFloat("angley", &Camera::GetInstance().angle.y, 0.1f);
+			ImGui::InputFloat("anglez", &Camera::GetInstance().angle.z, 0.1f);
+			sukillLen.z = sukillLen.x;
+
+			Camera::GetInstance().SetSukillLength(sukillLen);
+		}
+
 		if (ImGui::CollapsingHeader(u8"camera当たり判定"))
 		{
 			static DirectX::XMFLOAT3 cubeMax;
@@ -430,7 +455,7 @@ void SceneGame::Imgui()
 		}
 	}
 	//Fog
-	static float fogNear;
+	static float fogNear = 1.f;
 	static float fogFar;
 	static DirectX::XMFLOAT4 fogColor;
 	if (ImGui::CollapsingHeader("FOG"))
@@ -495,7 +520,7 @@ void SceneGame::Imgui()
 int SceneGame::Update(float elapsedTime)
 {
 	static bool fadeFlag = false;
-	if (!tutorialFlag)
+	if (!tutorialFlag)//操作説明
 	{
 		tutorialTime += elapsedTime;
 		if (tutorialTime > 2.0f)
@@ -504,6 +529,7 @@ int SceneGame::Update(float elapsedTime)
 			if (KeyInput::KeyTrigger() & KEY_ENTER || input::ButtonRisingState(0, input::PadLabel::A) && !IsNowLoading())
 			{
 				fadeFlag = true;
+				SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::THUNDER1), false);
 			}
 			if (fadeFlag)
 			{
@@ -521,23 +547,24 @@ int SceneGame::Update(float elapsedTime)
 	}
 	EndLoading();
 	Imgui();
+	//スカイキューブ更新処理
 	skyCube->Update();
+	//ライト更新処理
 	LightUpdate(elapsedTime);
-	DirectX::XMFLOAT3 angle = player->GetObj()->GetAngle();
-	DirectX::XMFLOAT3 enmposition = player->GetObj()->GetPosition();
-	static float volume = 1.0f;
-	static float pan = 0.0f;
 #ifdef USE_IMGUI
+	//エンターで死亡(debug用)
 	if (KeyInput::KeyTrigger() & KEY_ENTER)
 	{
-		player->GetObj()->SetExist(false);
-		pFadeOut.MoveStart();
+		//player->GetObj()->SetExist(false);
+		//FadeOut::GetInctence().MoveStart();
 	}
 #endif
 
-	if (pFadeOut.Update(elapsedTime))
+	if (FadeOut::GetInctence().Update(elapsedTime))//シーン移行処理
 	{
+		//BGM停止
 		SoundManager::getinctance().Stop(static_cast<int>(SoundManager::SOUNDGAME::GAME_BGM));
+
 		if (state == STATE::CLEAR) return SceneName::CLEAR;
 		else if (state == STATE::OVER) return SceneName::OVER;
 		else return SceneName::TITLE;
@@ -550,18 +577,31 @@ int SceneGame::Update(float elapsedTime)
 			//BGMSTART
 			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::GAME_BGM), true);
 			bossEnemy->attackStartFlag = false;
+
+			skyCube->SetFogNear(1.0);
+			skyCube->SetFogFar(0.0);
+			skyCube->SetFogColor(DirectX::XMFLOAT4(0, 0, 0, 1));
+			modelRenderer->SetFogNear(1.0);
+			modelRenderer->SetFogFar(0.0);
+			modelRenderer->SetFogColor(DirectX::XMFLOAT4(0, 0, 0, 1));
 		}
-		pHitAreaRender.Clear();
+		//当たり判定描画クリア
+		HitAreaRnder::GetInctance().Clear();
 		//soundBGM->SetPan(pan);
 		//soundBGM->SetVolume(volume);
 		//tstcube->Update();
+		//ステージ
 		tstStage->Update(elapsedTime);
+		//剣の軌跡
 		trajectory->SetStartPosition(player->GetTrajectoryStartPosition());
 		trajectory->SetEndPosition(player->GetTrajectoryEndPosition());
 		trajectory->SwapPosition();
+		//エネミー
 		bossEnemy->Update(elapsedTime);
 		//stage->CalculateTransform();
+
 		AttackLine::GetInctance().Update();
+		//ゲームスタート時雷
 		if (firstFlag)
 		{
 			EffectObj::GetInstance().SetScale(EffectObj::TYPE::THUNDER, DirectX::XMFLOAT3(3, 3, 3));
@@ -569,19 +609,29 @@ int SceneGame::Update(float elapsedTime)
 			EffectObj::GetInstance().Play(EffectObj::TYPE::THUNDER);
 			firstFlag = false;
 		}
-		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::BLACKMIST, bossEnemy->GetObj()->GetPosition());
+		//エフェクト
 		EffectObj::GetInstance().Update();
-
+		//プレイヤー
 		player->Update(elapsedTime);
+		//HP,SP
 		playerHp->Update(elapsedTime, player->GetObj()->GetMaxHp(), player->GetObj()->GetHp(), 6.f);
 		enemyHp->Update(elapsedTime, bossEnemy->GetObj()->GetMaxHp(), bossEnemy->GetObj()->GetHp(), 6.f);
 		playerSp->Update(elapsedTime, player->GetObj()->GetMaxSp(), player->GetObj()->GetSp(), 6.f);
-
+		playerMp->Update(elapsedTime, player->GetObj()->GetMaxMp(), player->GetObj()->GetMp(), 6.f);
+		//当たり判定
 		CollisionManager::Judge(elapsedTime, *player->GetObj(), *bossEnemy->GetObj(), *tstStage);
+
+		//当たり判定後にワールド行列更新
+		player->GetObj()->CalculateTransform();
+		bossEnemy->GetObj()->CalculateTransform();
+		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::BLACKMIST, bossEnemy->GetObj()->GetPosition());
+		//カメラ
 		Camera::GetInstance().SetTarget(DirectX::XMFLOAT3(player->GetObj()->GetPosition().x, player->GetObj()->GetHeadPosition().y, player->GetObj()->GetPosition().z));
+		Camera::GetInstance().SetEnemy(DirectX::XMFLOAT3(bossEnemy->GetObj()->GetPosition().x, bossEnemy->GetObj()->GetHeadPosition().y, bossEnemy->GetObj()->GetPosition().z));
+		//エフェクト
 		pParticleManager->Update(elapsedTime);
 		//カメラ変更
-		if (!Camera::GetInstance().GetFreeFlag())
+		if (!Camera::GetInstance().GetFreeFlag())//フリーカメラでない場合（ロックオン、通常カメラで切り替え）
 		{
 			if (KeyInput::KeyTrigger() & KEY_L || input::ButtonRisingState(0, input::PadLabel::RTHUMB))
 			{
@@ -628,8 +678,12 @@ int SceneGame::Update(float elapsedTime)
 		{
 			state = STATE::STOP;
 		}
+		if (player->GetObj()->GetSukillAttackFlag())
+		{
+			state = STATE::SUKILL;
+		}
 		break;
-	case STATE::STOP:
+	case STATE::STOP: //ヒットストップ
 		static float  timer;
 		timer++;
 		if (timer >= player->GetAttackData()->stopTime[3])
@@ -640,7 +694,25 @@ int SceneGame::Update(float elapsedTime)
 			state = STATE::GAME;
 		}
 		break;
-	case STATE::CLEAR:
+	case STATE::SUKILL: //スキルカメラ
+
+		bossEnemy->Update(elapsedTime);
+		EffectObj::GetInstance().SetPosition(EffectObj::TYPE::BLACKMIST, bossEnemy->GetObj()->GetPosition());
+		player->Update(elapsedTime);
+		playerHp->Update(elapsedTime, player->GetObj()->GetMaxHp(), player->GetObj()->GetHp(), 6.f);
+		enemyHp->Update(elapsedTime, bossEnemy->GetObj()->GetMaxHp(), bossEnemy->GetObj()->GetHp(), 6.f);
+		CollisionManager::Judge(elapsedTime, *player->GetObj(), *bossEnemy->GetObj(), *tstStage);
+		Camera::GetInstance().SetTargetAngle(player->GetObj()->GetAngle());
+		Camera::GetInstance().SetCamera(length, Camera::TYPE::SUKILL);
+		HitAreaRnder::GetInctance().Clear();
+		EffectObj::GetInstance().Update();
+		if (!player->GetObj()->GetSukillAttackFlag())
+		{
+			state = STATE::GAME;
+			Camera::GetInstance().SetSukillEndFlag(false);
+		}
+		break;
+	case STATE::CLEAR: //クリアジーン移行前カメラ
 		bossEnemy->Update(elapsedTime);
 		//nlength = { 85,40,85 };
 		Camera::GetInstance().SetCamera(length, Camera::TYPE::CLEAR);
@@ -648,7 +720,7 @@ int SceneGame::Update(float elapsedTime)
 		ParticleManager::getInstance()->Update(elapsedTime);
 		EffectObj::GetInstance().Update();
 		break;
-	case STATE::OVER:
+	case STATE::OVER://オーバーシーン移行前カメラ
 		player->Update(elapsedTime);
 		bossEnemy->Update(elapsedTime * 0.2f);
 		//length = { 55,-8,55 };
@@ -659,10 +731,15 @@ int SceneGame::Update(float elapsedTime)
 		break;
 	}
 
+	//カメラUpdate
 	Camera::GetInstance().Updata(elapsedTime);
 	Camera::GetInstance().CalculateTransforms();
 	Camera::GetInstance().flag = true;
-	pHitAreaRender.CalculateTransform(Camera::GetInstance().GetView(), Camera::GetInstance().GetProjection());
+
+	//当たり判定描画
+	HitAreaRnder::GetInctance().CalculateTransform(Camera::GetInstance().GetView(), Camera::GetInstance().GetProjection());
+
+	mpMaxColorW = changeColorLoop(elapsedTime, 1, 10, 7.f);
 	return 0;
 }
 void SceneGame::Render(float elapsedTime, ID3D11DeviceContext* devicecontext)
@@ -745,33 +822,43 @@ void SceneGame::Render(float elapsedTime, ID3D11DeviceContext* devicecontext)
 	frameBuffer[0]->Activate(devicecontext);
 	{
 		lightBuffer->Activate(devicecontext, 3);//hlsl b(03)
-		skyCube->Render(devicecontext, view, projection);
+
+		//背景
+		//if (!player->GetObj()->GetSukillAttackFlag())
+		if (!Camera::GetInstance().GetSukillEnemyFocusFlag())
+		{
+			skyCube->Render(devicecontext, view, projection);
+		}
 		rasterizer->SetRasterizerState(RS_CULL_BACK, devicecontext);
 		blendGame[0]->Activate(devicecontext);
 		modelRenderer->Begin(devicecontext, view_projection, VECTOR4(0, -1, -1, 1));
-		modelRenderer->Draw(devicecontext, player->GetModel(), VECTOR4(0.5, 0.5, 0.5, 1));
-		modelRenderer->Draw(devicecontext, player->GetWeaponModel());
+		//player描画
+		if (!Camera::GetInstance().GetSukillEnemyFocusFlag())
+		{
+			modelRenderer->Draw(devicecontext, player->GetModel(), VECTOR4(0.5, 0.5, 0.5, 1));
+			modelRenderer->Draw(devicecontext, player->GetWeaponModel(), player->GetObj()->GetSukillColor());
 
-		//stage
-		if (tstStage->GetLeftObj1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetLeftObj1()->GetModel());
-		if (tstStage->GetLeftObj2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetLeftObj2()->GetModel());
-		if (tstStage->GetRightObj1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetRightObj1()->GetModel());
-		if (tstStage->GetRightObj2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetRightObj2()->GetModel());
-		if (tstStage->GetFrontObj1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetFrontObj1()->GetModel());
-		if (tstStage->GetFrontObj2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetFrontObj2()->GetModel());
-		if (tstStage->GetBackObj1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetBackObj1()->GetModel());
-		if (tstStage->GetBackObj2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetBackObj2()->GetModel());
-		if (tstStage->GetHaka1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetHaka1()->GetModel());
-		if (tstStage->GetHaka2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetHaka2()->GetModel());
-		modelRenderer->Draw(devicecontext, tstStage->GetFloor()->GetModel());
+			//stage
+			if (tstStage->GetLeftObj1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetLeftObj1()->GetModel());
+			if (tstStage->GetLeftObj2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetLeftObj2()->GetModel());
+			if (tstStage->GetRightObj1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetRightObj1()->GetModel());
+			if (tstStage->GetRightObj2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetRightObj2()->GetModel());
+			if (tstStage->GetFrontObj1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetFrontObj1()->GetModel());
+			if (tstStage->GetFrontObj2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetFrontObj2()->GetModel());
+			if (tstStage->GetBackObj1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetBackObj1()->GetModel());
+			if (tstStage->GetBackObj2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetBackObj2()->GetModel());
+			if (tstStage->GetHaka1()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetHaka1()->GetModel());
+			if (tstStage->GetHaka2()->GetExist())modelRenderer->Draw(devicecontext, tstStage->GetHaka2()->GetModel());
+			modelRenderer->Draw(devicecontext, tstStage->GetFloor()->GetModel());//床描画
+		}
+		//エネミー描画
 		modelRenderer->Draw(devicecontext, bossEnemy->GetModel(), VECTOR4(1.0f, 1.0f, 1.0f, 1.0f));
-
 		if (bossEnemy->GetSkull()->GetExist())modelRenderer->Draw(devicecontext, bossEnemy->GetSkull()->GetModel(), VECTOR4(1.0f, 1.0f, 1.0f, 1.0f));
 		modelRenderer->End(devicecontext);
 
-		if (hitRenderFlag)
+		if (hitRenderFlag)//当たり判定描画
 		{
-			pHitAreaRender.Render(devicecontext, DirectX::XMFLOAT4(0, -1, -1, 1));
+			HitAreaRnder::GetInctance().Render(devicecontext, DirectX::XMFLOAT4(0, -1, -1, 1));
 		}
 
 		blendGame[0]->Deactivate(devicecontext);
@@ -783,6 +870,19 @@ void SceneGame::Render(float elapsedTime, ID3D11DeviceContext* devicecontext)
 		rasterizer->SetRasterizerState(RS_CULL_BACK, devicecontext);
 		EffectObj::GetInstance().Render();
 		//trajectory->Render(devicecontext, view_projection);
+
+		//MP	
+		if (player->GetObj()->GetMpMaxFlag())
+		{
+			playerMpMax->Render(devicecontext, shader.get(), 180, 88, player->GetObj()->GetMaxHp() * 6.04f, 24, 0, 0, 500, 20, 0, mpMaxColorW, 1, 1, 1);
+			healIconTex->Render(devicecontext, shader.get(), 180, 118, 50, 50, 0, 0, 256, 256, 1, 1, 1, 1, 1);
+			sukillIconTex->Render(devicecontext, shader.get(), 260, 118, 50, 50, 0, 0, 256, 256, 1, 1, 1, 1, 1);
+		}
+		else
+		{
+			playerMpMax->Render(devicecontext, shader.get(), 180, 88, player->GetObj()->GetMaxHp() * 6.04f, 24, 0, 0, 500, 20, 0, 1, 0, 0, 1);
+		}
+		playerMp->Render(devicecontext, DirectX::XMFLOAT2(183, 90), 20.f, DirectX::XMFLOAT2(0, 0), DirectX::XMFLOAT2(494, 14), 0, DirectX::XMFLOAT4(tstColor1.x, tstColor1.y, tstColor1.z, tstColor1.w));
 		blendGame[0]->Deactivate(devicecontext);
 
 		blendGame[1]->Activate(devicecontext);
@@ -792,19 +892,21 @@ void SceneGame::Render(float elapsedTime, ID3D11DeviceContext* devicecontext)
 
 		pParticleManager->Render(devicecontext, V, P, DirectX::XMFLOAT4(0, -1, -1, 1));
 		//エフェクトテスト
+
 #if 1
+		//エネミー回転攻撃時エフェクト描画
 		if (bossEnemy->GetObj()->GetRAttackFlag())
 		{
-			EfectModelRenderer->Begin(devicecontext, view_projection, VECTOR4(0, -1, -1, 1));
-			EfectModelRenderer->Draw(devicecontext, bossEnemy->GetRAttackObj1()->GetModel(),VECTOR4(0,0,1, bossEnemy->GetEffectColorW1()));
-			EfectModelRenderer->Draw(devicecontext, bossEnemy->GetRAttackObj2()->GetModel(), VECTOR4(0, 0, 1, bossEnemy->GetEffectColorW2()));
-			EfectModelRenderer->End(devicecontext);
+			EffectModelRenderer->Begin(devicecontext, view_projection, VECTOR4(0, -1, -1, 1));
+			EffectModelRenderer->Draw(devicecontext, bossEnemy->GetRAttackObj1()->GetModel(), VECTOR4(0, 0, 1.f, bossEnemy->GetEffectColorW1()));
+			EffectModelRenderer->Draw(devicecontext, bossEnemy->GetRAttackObj2()->GetModel(), VECTOR4(0, 0, 1.f, bossEnemy->GetEffectColorW2()));
+			EffectModelRenderer->End(devicecontext);
 		}
 #else
-		EfectModelRenderer->Begin(devicecontext, view_projection, VECTOR4(0, -1, -1, 1));
-		EfectModelRenderer->Draw(devicecontext, tstbox->GetModel(), tstColor);
-		EfectModelRenderer->Draw(devicecontext, tstbox1->GetModel(), tstColor1);
-		EfectModelRenderer->End(devicecontext);
+		EffectModelRenderer->Begin(devicecontext, view_projection, VECTOR4(0, -1, -1, 1));
+		EffectModelRenderer->Draw(devicecontext, tstbox->GetModel(), tstColor);
+		EffectModelRenderer->Draw(devicecontext, tstbox1->GetModel(), tstColor1);
+		EffectModelRenderer->End(devicecontext);
 #endif
 		blendGame[1]->Deactivate(devicecontext);
 		samplerWrap->Deactivate(devicecontext);
@@ -817,14 +919,14 @@ void SceneGame::Render(float elapsedTime, ID3D11DeviceContext* devicecontext)
 	frameBuffer[1]->Activate(devicecontext);
 
 	renderEffects->ShadowRender(devicecontext, frameBuffer[0]->GetRenderTargetShaderResourceView().Get(), frameBuffer[0]->GetDepthStencilShaderResourceView().Get(), shadowmap->GetDepthStencilShaderResourceView().Get(), view, projection, lightCamera.GetView(), lightCamera.GetProjection());
-
+	//ブルーム
 	bloomEffect->Generate(devicecontext, frameBuffer[0]->GetRenderTargetShaderResourceView().Get());
 	bloomEffect->Blit(devicecontext);
 
 	frameBuffer[1]->Deactivate(devicecontext);
 	//depthに書きこみきったものをfrontに描画
 	//追加するならframebufferを追加し最終書き込み終わったものを取得framebuffer[1]と同じ手順
-	if (player->GetObj()->GetHitStateFlag())
+	if (player->GetObj()->GetHitStateFlag())//playerヒット時ビネット描画
 	{
 		float area = vignetteEffect->GetVignetteArea();
 		area += 15.f * elapsedTime;
@@ -851,7 +953,8 @@ void SceneGame::Render(float elapsedTime, ID3D11DeviceContext* devicecontext)
 		playerSp->Render(devicecontext, DirectX::XMFLOAT2(183, 60), 20.f, DirectX::XMFLOAT2(0, 0), DirectX::XMFLOAT2(494, 14), 0, DirectX::XMFLOAT4(1, 0, 0, 1));
 	else
 		playerSp->Render(devicecontext, DirectX::XMFLOAT2(183, 60), 20.f, DirectX::XMFLOAT2(0, 0), DirectX::XMFLOAT2(494, 14), 0, DirectX::XMFLOAT4(1, 1, 1, 1));
-	pFadeOut.Render(devicecontext);
+	//フェードアウト描画
+	FadeOut::GetInctence().Render(devicecontext);
 
 	blendGame[0]->Deactivate(devicecontext);
 }
@@ -861,8 +964,24 @@ SceneGame::~SceneGame()
 	Camera::GetInstance().Destroy();
 	pLoadModel.Destory();
 	pParticleManager->Destroy();
-	pHitAreaRender.Destroy();
+	HitAreaRnder::GetInctance().Destroy();
 	EffectObj::GetInstance().Destory();
 	AttackLine::GetInctance().Destroy();
 	//e.~EffectObj();
+}
+
+float SceneGame::changeColorLoop(float elapsedTime, float color, float changeColor, float pulsColor)
+{
+	static float loopColor = color;
+
+	if (loopColor >changeColor)
+	{
+		pulsColor *= -1;
+	}
+	else if (loopColor < color)
+	{
+		pulsColor *= -1;
+	}
+	loopColor += elapsedTime * pulsColor;
+	return loopColor;
 }

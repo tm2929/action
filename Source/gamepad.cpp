@@ -106,6 +106,16 @@ namespace input
 				GamePadManager::GetInstance().ButtonPressedState(id, XINPUT_GAMEPAD_Y) :
 				GamePadManager::GetInstance().ButtonPressedState(id, 3);
 			break;
+		case input::PadLabel::LTRIGGER:
+			return GamePadManager::GetInstance().IsXinput(id) ?
+				GamePadManager::GetInstance().ButtonPressedState(id, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE) :
+				GamePadManager::GetInstance().ButtonPressedState(id, 6);
+			break;
+		case input::PadLabel::RTRIGGER:
+			return GamePadManager::GetInstance().IsXinput(id) ?
+				GamePadManager::GetInstance().ButtonPressedState(id, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE) :
+				GamePadManager::GetInstance().ButtonPressedState(id, 7);
+			break;
 		default:
 			break;
 		}
@@ -185,6 +195,15 @@ namespace input
 				GamePadManager::GetInstance().ButtonRisingState(id, XINPUT_GAMEPAD_Y) :
 				GamePadManager::GetInstance().ButtonRisingState(id, 3);
 			break;
+		case input::PadLabel::LTRIGGER:
+			return GamePadManager::GetInstance().IsXinput(id) ?
+				GamePadManager::GetInstance().ButtonPressedState(id, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE) :
+				GamePadManager::GetInstance().ButtonPressedState(id, 6);
+			break;
+		case input::PadLabel::RTRIGGER:
+			return GamePadManager::GetInstance().IsXinput(id) ?
+				GamePadManager::GetInstance().ButtonPressedState(id, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE) :
+				GamePadManager::GetInstance().ButtonPressedState(id, 7);
 		default:
 			break;
 		}
@@ -265,6 +284,15 @@ namespace input
 				GamePadManager::GetInstance().ButtonFallingState(id, XINPUT_GAMEPAD_Y) :
 				GamePadManager::GetInstance().ButtonFallingState(id, 3);
 			break;
+		case input::PadLabel::LTRIGGER:
+			return GamePadManager::GetInstance().IsXinput(id) ?
+				GamePadManager::GetInstance().ButtonPressedState(id, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE) :
+				GamePadManager::GetInstance().ButtonPressedState(id, 6);
+			break;
+		case input::PadLabel::RTRIGGER:
+			return GamePadManager::GetInstance().IsXinput(id) ?
+				GamePadManager::GetInstance().ButtonPressedState(id, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE) :
+				GamePadManager::GetInstance().ButtonPressedState(id, 7);
 		default:
 			break;
 		}

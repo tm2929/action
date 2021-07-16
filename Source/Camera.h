@@ -5,6 +5,18 @@
 class Camera
 {
 private:
+	//スキル用
+	DirectX::XMFLOAT3 sukillLength{ 85,40,85 };
+	float count = 0;
+	bool sukillEnemyFocusFlag = false; //スキル発動後エネミーフォーカス時
+	bool sukillEndFlag = false;
+	enum class SUKILLSTATE
+	{
+		PLAYERFOCUS,
+		ENEMYFOCUS,
+	};
+	SUKILLSTATE sukillState = SUKILLSTATE::PLAYERFOCUS;
+
 
 	bool lerpFlag = false;
 	bool targetFlag = false;
@@ -58,6 +70,7 @@ public:
 		RELATIVE_POS,//通常プレイヤーカメラ左右移動あり
 		TARGET,//エネミーロックオン
 		FREE,//フリーカメラ
+		SUKILL,//スキル時カメラ
 		CLEAR,//クリア時カメラ
 		OVER,//オーバー時カメラ
 	};
@@ -83,14 +96,20 @@ public:
 	void RelativePosCamera();//プレイヤー軸カメラ
 	void TargetCamera(float elapsed_time);//エネミーロックオン
 	void FreeCamera();
+	void SukillCamera(float elapsedTime);//スキル時カメラ
 	void SetVibration(float range, float timer); //振動開始
 	void Vibrate(float elapsedTime);    //振動カメラ 
-	void ClearCamera(float elapsedTime);
-	void OverCamera(float elapsedTime);
+	void ClearCamera(float elapsedTime);//クリア時以降前カメラ
+	void OverCamera(float elapsedTime);//オーバー時以降前カメラ
 	//セッター
+	void SetSukillEnemyFocusFlag(const bool sukillEnemyFocusFlag) { this->sukillEnemyFocusFlag = sukillEnemyFocusFlag; }
+	void SetSukillEndFlag(const bool sukillEndFlag) { this->sukillEndFlag = sukillEndFlag; }
+
+	void SetSukillLength(const DirectX::XMFLOAT3& sukillLength) { this->sukillLength = sukillLength; }
 	void SetTarget(const DirectX::XMFLOAT3& target_pos);
 	void SetTargetAngle(const DirectX::XMFLOAT3& target_angle);
 	void SetEnemy(const DirectX::XMFLOAT3& enemy_pos);
+	void SetCount(const float count) { this->count = count; }
 	void SetEye(const DirectX::XMFLOAT3 eye) { this->eye = eye; }
 	void SetFocus(const DirectX::XMFLOAT3 focus) { this->focus = focus; }
 	void SetUp(const DirectX::XMFLOAT3 up) { this->up = up; }
@@ -101,6 +120,7 @@ public:
 	void SetCameraCubeMin(const DirectX::XMFLOAT3 min) { cubeMin = min; }
 	void SetCameraCubePos(const DirectX::XMFLOAT3 pos) { cubePos = pos; }
 	//ゲッター
+	DirectX::XMFLOAT3& GetSukillLength() { return sukillLength; }
 	DirectX::XMFLOAT3& GetEye() { return eye; }
 	DirectX::XMFLOAT3& GetFocus() { return focus; }
 	DirectX::XMFLOAT3& GetUp() { return up; }
@@ -110,6 +130,8 @@ public:
 	const DirectX::XMFLOAT3& GetRight() const { return right; }
 	const DirectX::XMFLOAT4X4& GetView()const { return view; }
 	const DirectX::XMFLOAT4X4& GetProjection()const { return projection; }
+	const bool& GetSukillEnemyFocusFlag()const { return sukillEnemyFocusFlag; }
+	const bool& GetSukillEndFlag()const { return sukillEndFlag; }
 	const bool& GetTargetFlag()const { return targetFlag; }
 	const bool& GetLerpFlag()const { return lerpFlag; }
 	const bool& GetFreeFlag()const { return freeFlag; }

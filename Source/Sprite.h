@@ -77,7 +77,7 @@ public:
 	{
 		constantBuffer->data.dissolveThreshold = threshold;
 	}
-	void SetEmissiveWith(float emissiveWith)
+	void SetEmissiveWidth(float emissiveWith)
 	{
 		constantBuffer->data.emissiveWith = emissiveWith;
 	}

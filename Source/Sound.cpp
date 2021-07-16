@@ -235,8 +235,9 @@ void SoundManager::CreateSoundSourceTitle()
 {
 	SoundData sounddata[] =
 	{
-		{static_cast<int>(SOUNDTITLE::TITLE_BGM),"Data/sounds/TITLEBGM.wav"},
+		{static_cast<int>(SOUNDTITLE::BGM),"Data/sounds/TITLEBGM.wav"},
 		{static_cast<int>(SOUNDTITLE::ENTER),"Data/sounds/SE/Enter.wav"},
+		{static_cast<int>(SOUNDTITLE::SELECT),"Data/sounds/SE/cursor.wav"},
 
 	};
 	//int size = sizeof(sounddata) / sizeof(SoundData);

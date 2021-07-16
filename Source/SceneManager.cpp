@@ -9,7 +9,7 @@
 SceneManager* SceneManager::scenemanager = nullptr;
 SceneManager::SceneManager(ID3D11Device* device, HWND hwnd)
 {
-	pFadeOut.Load(device, L"Data/images/siro.png");
+	FadeOut::GetInctence().Load(device, L"Data/images/siro.png");
 	ChangeScene(TITLE, device, hwnd);
 }
 void SceneManager::Updata(float elapsed_time, ID3D11Device* device, HWND hwnd)

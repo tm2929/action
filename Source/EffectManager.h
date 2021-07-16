@@ -20,9 +20,13 @@ public:
 		TST,					//テスト
 		CHARGE,			//溜め
 		SLASHING,		//斬撃的な
+		RUN,
 		BRIBIRI,
 		CIRCLE,		//魔法陣
-		SUKILL,
+		PLAYERCHARGE, 
+		SUKILL,		 //スキル
+		HEAL,           //回復
+		MPMAX,
 		END
 	};
 	void Play(TYPE i);
@@ -93,7 +97,6 @@ private:
 	static const int num = static_cast<int>(TYPE::END);
 	::Effekseer::Effect* effect[num];
 	Effekseer::Handle handle[num];
-	//std::unique_ptr<Efect>e;
 	//DirectX::XMFLOAT3	p;
 	//DirectX::XMFLOAT3	s;
 

@@ -46,4 +46,3 @@ private:
 	std::vector<Data>cubeData;
 	std::vector<Data>sphereData;
 };
-#define pHitAreaRender (HitAreaRnder::GetInctance())

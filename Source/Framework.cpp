@@ -169,7 +169,7 @@ void framework::update(float elapsed_time/*Elapsed seconds from last frame*/)
 void framework::render(float elapsed_time/*Elapsed seconds from last frame*/)
 {
 
-	float ClearColor[4] = { 0.0f, 0.f, 0.0f, 1.0f }; //red,green,blue,alpha
+	float ClearColor[4] = { 0.2f, 0.2f, 0.2f, 1.0f }; //red,green,blue,alpha
 	deviceContext->ClearRenderTargetView(renderTargetView.Get(), ClearColor);
 
 	deviceContext->ClearDepthStencilView(depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);

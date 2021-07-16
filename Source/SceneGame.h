@@ -57,6 +57,8 @@ public:
 
 	bool hitRenderFlag = true;
 
+	float mpMaxColorW;
+
 	void LightInit(ID3D11Device* device);
 	void LightUpdate(float elapsed_time);
 
@@ -66,6 +68,7 @@ public:
 	//void RenderShadow(ID3D11DeviceContext* immediateContext);
 	void Render(float elapsed_time, ID3D11DeviceContext* devicecontext);
 	~SceneGame();
+	float changeColorLoop(float elapsedTime,float color,float changeColor,float pulsColor);//元　最終　＋
 private:
 	std::unique_ptr<BlendState> blendGame[2];
 	std::unique_ptr<Sprite> nowLoading;
@@ -73,6 +76,7 @@ private:
 	{
 		GAME,
 		STOP,
+		SUKILL,//スキル時
 		CLEAR,//クリア時演出後クリアシーンへ
 		OVER, // オーバー時演出後オーバーシーンへ
 	};
@@ -101,9 +105,16 @@ private:
 	//SP
 	std::unique_ptr<Ui>playerSp;
 	std::unique_ptr<Sprite>playerSpMax;
+	//MP
+	std::unique_ptr<Ui>playerMp;
+	std::unique_ptr<Sprite>playerMpMax;
+
+	//sukillicon
+	std::unique_ptr<Sprite>sukillIconTex;
+	std::unique_ptr<Sprite>healIconTex;
 
 	std::unique_ptr<ModelRenderer>modelRenderer;
-	std::unique_ptr<ModelRenderer>EfectModelRenderer;//深度値をみない
+	std::unique_ptr<ModelRenderer>EffectModelRenderer;//深度値をみない
 	std::unique_ptr<Player>player;
 	std::unique_ptr<Enemy>bossEnemy;
 	std::unique_ptr<Trajectory>trajectory; //軌跡
@@ -132,16 +143,16 @@ private:
 	std::unique_ptr<Obj3D> tstbox;
 	std::unique_ptr<Obj3D> tstbox1;
 	//位置調整用
-	DirectX::XMFLOAT3 tstPos = DirectX::XMFLOAT3(0.0f, 8.1f, -200.f);
+	DirectX::XMFLOAT3 tstPos = DirectX::XMFLOAT3(0.0f, 0, -0);
 	DirectX::XMFLOAT3 tstPos1 = DirectX::XMFLOAT3(0.0f, 2.5f, -200.f);
 	//カラー調整用
 	float easingColor = 4.f;
-	VECTOR4 tstColor = VECTOR4(0, 0, 1, 1);
-	VECTOR4 tstColor1 = VECTOR4(0, 0, 1, 1);
+	VECTOR4 tstColor = VECTOR4(1, 0, 0, 1);
+	VECTOR4 tstColor1 = VECTOR4(1, 0, 0, 1);
 	//サイズ調整用
 	float easingScale = 30;
 	float easingScale1 = 30;
-	DirectX::XMFLOAT3 tstScale = DirectX::XMFLOAT3(5, 25, 5);
+	DirectX::XMFLOAT3 tstScale = DirectX::XMFLOAT3(1, 1, 1);
 	DirectX::XMFLOAT3 tstScale1 = DirectX::XMFLOAT3(16, 2.f, 16);
 	//角度調整用
 

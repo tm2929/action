@@ -96,6 +96,8 @@ namespace input
 		B,
 		X,
 		Y,
+		LTRIGGER,
+		RTRIGGER,
 	};
 	void GamepadInitialize(int id, bool xinput, HINSTANCE m_hinstance, const float deadzone_x = 0.1f, const float deadzone_y = 0.1f);
 	void GamepadUpdate();

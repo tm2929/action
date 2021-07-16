@@ -7,12 +7,15 @@ struct EnemyHitData
 	float damage;//Šî‘bƒ_ƒ[ƒW
 	float maxDamageMagnification;
 	float attackPower[3];//˜AŒ‚‰ÁZ
-	DirectX::XMFLOAT3 pulsPos;//UŒ‚ˆÚ“®‹——£
-	float pulsDamage;//˜A‘±UŒ‚‰ÁZ‚Ì“ü‚ê•¨
+	DirectX::XMFLOAT3 plusPos;//UŒ‚ˆÚ“®‹——£
+	float plusDamage;//˜A‘±UŒ‚‰ÁZ‚Ì“ü‚ê•¨
 	float hitAttackLength;//UŒ‚“–‚½‚è”»’è‚Ì’·‚³
 	float hitLength;//–{‘Ì“–‚½‚è”»’è‚Ì’·‚³
 	float attackTime;//UŒ‚ƒ‚[ƒVƒ‡ƒ“Ø‚è‘Ö‚¦ŠÔ
 	int count = 0;//UŒ‚ŠJnƒtƒŒ[ƒ€
+
+	float downTime;//downŠÔ
+	float sukillDownTime;//sukill‚ÌdownŠÔ
 	void Init();
 };
 struct EnemyChoiceData
@@ -58,6 +61,24 @@ struct EnemyAttackData
 	float rushTime;
 	float chargeTime;//‚½‚ßŠÔ
 	bool rushFlag[3];
+	void Init();
+};
+struct EnemyRAttackData
+{
+	//Ší
+	DirectX::XMFLOAT3 effectScale1 = {0,0,0};
+	DirectX::XMFLOAT3 effectScale2 = { 0,0,0 };
+	float effectAngle1 = 0;
+	float effectAngle2 = 0;
+
+	DirectX::XMFLOAT3 defaultScale1;
+	DirectX::XMFLOAT3 defaultScale2;
+	float dispMaxTimer;
+	float easingScale1 ;
+	float easingScale2 ;
+	float easingColor ;
+	float effectColorW1;
+	float effectColorW2 ;
 	void Init();
 };
 struct EnemySpeedData

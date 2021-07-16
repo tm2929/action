@@ -43,6 +43,7 @@ public:
 		constantBuffer->data.blurConvolutionIntensity = blurConvolutionIntensity;
 	}
 	float GetGrowExtractionThreshold() const { return constantBuffer->data.growExtractionThreshold; }
+	float GetBlurConvolutionIntensity() const { return constantBuffer->data.blurConvolutionIntensity; }
 	//const DirectX::XMFLOAT3& GetColor() { return color; }
 	std::unique_ptr<FrameBuffer> glowExtraction;
 	std::unique_ptr<FrameBuffer> gaussianBlur[5][2];//‚Ú‚©‚µ

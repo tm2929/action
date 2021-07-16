@@ -95,6 +95,9 @@ void Camera::Updata(float elapsedTime)
 	case TYPE::FREE:
 		FreeCamera();
 		break;
+	case TYPE::SUKILL:
+		SukillCamera(elapsedTime);
+		break;
 	case TYPE::CLEAR:
 		ClearCamera(elapsedTime);
 		break;
@@ -114,7 +117,7 @@ void Camera::Updata(float elapsedTime)
 	cube.min.y = cubePos.y - cubeMin.y;
 	cube.min.z = cubePos.z - cubeMin.z;
 
-	pHitAreaRender.SetHitCube(cube.min, cube.max, DirectX::XMFLOAT4(1, 1, 1, 1));
+	HitAreaRnder::GetInctance().SetHitCube(cube.min, cube.max, DirectX::XMFLOAT4(1, 1, 1, 1));
 }
 
 void Camera::RelativePosCamera()
@@ -319,6 +322,49 @@ void Camera::FreeCamera()
 		DirectX::XMStoreFloat3(&this->up, up);
 		DirectX::XMStoreFloat3(&this->right, right);
 	}
+}
+void Camera::SukillCamera(float elapsedTime)
+{
+	switch (sukillState)
+	{
+	case SUKILLSTATE::PLAYERFOCUS:
+		eye = DirectX::XMFLOAT3(targetPos.x + sinf(-targetAngle.y) * len.x, targetPos.y + targetAngle.x + len.y, targetPos.z + cosf(-targetAngle.y) * len.z);
+		
+		focus = targetPos;
+
+		if (GetSukillEnemyFocusFlag())sukillState = SUKILLSTATE::ENEMYFOCUS;
+		break;
+
+	case SUKILLSTATE::ENEMYFOCUS:
+		count += elapsedTime;
+		DirectX::XMVECTOR lengthV;
+		DirectX::XMVECTOR endLength = DirectX::XMLoadFloat3(&GetSukillLength());
+		DirectX::XMVECTOR startLength = DirectX::XMLoadFloat3(&len);
+		lengthV = DirectX::XMVectorLerp(startLength, endLength, 0.8f);
+		DirectX::XMFLOAT3 ll;
+		DirectX::XMStoreFloat3(&ll, lengthV);
+		len = ll;
+		eye = DirectX::XMFLOAT3(enemyPos.x + sinf(angle.y) * len.x, enemyPos.y + angle.x + len.y, enemyPos.z + cosf(angle.y) * len.z);
+		//eye = DirectX::XMFLOAT3(0,0,0);
+
+		DirectX::XMVECTOR f = DirectX::XMLoadFloat3(&focus);
+		DirectX::XMVECTOR target = DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(enemyPos.x, enemyPos.y + 10, enemyPos.z));
+		f = DirectX::XMVectorLerp(f, target, 0.1f);
+		DirectX::XMFLOAT3 ff;
+		DirectX::XMStoreFloat3(&ff, f);
+
+		focus = ff;
+
+		if (count > 10.0f)
+		{
+			SetSukillEndFlag(true);
+			SetSukillEnemyFocusFlag(false);
+			sukillState = SUKILLSTATE::PLAYERFOCUS;
+			count = 0;
+		}
+		break;
+	}
+	
 }
 void Camera::Vibrate(float elapsedTime)
 {

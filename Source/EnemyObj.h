@@ -59,7 +59,7 @@ private:
 	DirectX::XMFLOAT3 headPosition;
 	int attackBoneNum = 0;
 	std::vector<std::string>boneName;
-	DirectX::XMFLOAT3 pulsPos = { 32,-8,16 };
+	DirectX::XMFLOAT3 plusPos = { 32,-8,16 };
 	DirectX::XMFLOAT3  direction;
 
 	//attackline•\Ž¦—p

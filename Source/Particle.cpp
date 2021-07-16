@@ -85,9 +85,9 @@ void ParticleManager::Update(float elapsedTime)
 	ImGui::InputFloat("color.z", &pParticleManager->Data.color.z, 0.1f);
 	ImGui::InputFloat("color.w", &pParticleManager->Data.color.w, 0.1f);
 	ImGui::SliderFloat("scale", &pParticleManager->Data.scale, 0, 100);
-	ImGui::SliderFloat("pulsX", &pParticleManager->Data.plusPos.x, -50, 50);
-	ImGui::SliderFloat("pulsY", &pParticleManager->Data.plusPos.y, -50, 50);
-	ImGui::SliderFloat("pulsZ", &pParticleManager->Data.plusPos.z, -50, 50);
+	ImGui::SliderFloat("plusX", &pParticleManager->Data.plusPos.x, -50, 50);
+	ImGui::SliderFloat("plusY", &pParticleManager->Data.plusPos.y, -50, 50);
+	ImGui::SliderFloat("plusZ", &pParticleManager->Data.plusPos.z, -50, 50);
 	ImGui::SliderInt("dispMaxTimer", &pParticleManager->Data.dispMaxTimer, 0, 50);
 
 	static int n = 0;

@@ -3,6 +3,7 @@
 #include "Particle.h"
 #include "Fadeout.h"
 #include "Sound.h"
+#include "EffectManager.h"
 void CollisionManager::Judge(float elapsed_time, PlayerObj& player, EnemyObj& enemy, Stage& stage)
 {
 	//player stage
@@ -51,27 +52,27 @@ void CollisionManager::Judge(float elapsed_time, PlayerObj& player, EnemyObj& en
 
 		DirectX::XMVECTOR beforePos = DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(player.GetBeforePosition().x, 0, player.GetBeforePosition().z));
 		DirectX::XMVECTOR nowPos = DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(player.GetPosition().x, 0, player.GetPosition().z));
-		DirectX::XMVECTOR vec = DirectX::XMVectorSubtract(nowPos,beforePos);
+		DirectX::XMVECTOR vec = DirectX::XMVectorSubtract(nowPos, beforePos);
 		float bnLen;
 		DirectX::XMStoreFloat(&bnLen, DirectX::XMVector3Length(vec));
 		DirectX::XMVECTOR normalize = DirectX::XMVector3Normalize(vec);
 		DirectX::XMFLOAT3 v;
 		DirectX::XMStoreFloat3(&v, normalize);
 		Cylinder pa = beforePlayerArea;
-		
+
 		for (int i = 0; i < 10; i++)
 		{
 			pa.max.x = beforePlayerArea.max.x + v.x * 2 * i;
 			pa.max.z = beforePlayerArea.max.z + v.z * 2 * i;
-			
+
 			pa.min.x = beforePlayerArea.min.x + v.x * 2 * i;
 			pa.min.z = beforePlayerArea.min.z + v.z * 2 * i;
 
 			if (Collision::isHitCylinder(pa, enemyArea) && !player.GetKnockBackFlag())
 			{
 				DirectX::XMVECTOR b = DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(enemy.GetPosition().x, 0, enemy.GetPosition().z));
-				
-				DirectX::XMVECTOR p = DirectX::XMLoadFloat3(&Vec3Subtract(pa.max, Vec3Multiply(v,2)));
+
+				DirectX::XMVECTOR p = DirectX::XMLoadFloat3(&Vec3Subtract(pa.max, Vec3Multiply(v, 2)));
 
 				//ボスからプレイヤーへのベクトル
 				DirectX::XMVECTOR vec = DirectX::XMVectorSubtract(p, b);
@@ -93,19 +94,15 @@ void CollisionManager::Judge(float elapsed_time, PlayerObj& player, EnemyObj& en
 	}
 	else
 	{
-		if (Collision::isHitCylinder(playerArea, enemyArea) && !player.GetKnockBackFlag())
+		if (Collision::isHitCylinder(playerArea, enemyArea) && !player.GetKnockBackFlag()&&!player.GetHitFlag())
 		{
-			//player->SetHitFlag(true);
-			//player.SetHitPosition(DirectX::XMFLOAT3(enemy.GetPosition().x, player.GetPosition().y, enemy.GetPosition().z));
-
-			//bossEnemy->SetHitFlag(true);
-			//enemy.SetHitPosition(DirectX::XMFLOAT3(player.GetPosition().x, player.GetPosition().y, player.GetPosition().z));
 
 			DirectX::XMVECTOR b = DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(enemy.GetPosition().x, 0, enemy.GetPosition().z));
-			DirectX::XMVECTOR p = DirectX::XMLoadFloat3(&player.GetPosition());
+			DirectX::XMVECTOR p = DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(player.GetPosition().x, 0, player.GetPosition().z));
 
 			//ボスからプレイヤーへのベクトル
 			DirectX::XMVECTOR vec = DirectX::XMVectorSubtract(p, b);
+			//DirectX::XMVECTOR vec = DirectX::XMVectorSubtract(b, p);
 			vec = DirectX::XMVector3Normalize(vec);
 
 			DirectX::XMFLOAT3 angle;
@@ -114,12 +111,15 @@ void CollisionManager::Judge(float elapsed_time, PlayerObj& player, EnemyObj& en
 			//半径の合計
 			float len = player.GetHitArea().area + enemy.GetHitArea().area;
 			player.SetPosition(DirectX::XMFLOAT3(enemy.GetPosition().x + angle.x * len, player.GetPosition().y, enemy.GetPosition().z + angle.z * len));
+			//enemy.SetPosition(DirectX::XMFLOAT3(player.GetPosition().x + angle.x * len, player.GetPosition().y, player.GetPosition().z + angle.z * len));
 			player.SetHitFlag(true);
 			enemy.SetHitFlag(true);
 		}
 	}
-	//playerの攻撃時
-	if (player.GetAttackFlag() && !player.GetDamageFlag()&&!enemy.GetShotAttackFlag())
+	//////////////////////////////////////////////////////
+	/////////playerの攻撃時///////////////////////////////
+	//////////////////////////////////////////////////////
+	if (player.GetAttackFlag() && !player.GetDamageFlag() && !enemy.GetShotAttackFlag())
 	{
 		//playerの攻撃範囲とボスとの当たり判定
 		Sphere playerAttackArea = player.GetHitSphere();
@@ -130,6 +130,7 @@ void CollisionManager::Judge(float elapsed_time, PlayerObj& player, EnemyObj& en
 			player.SetHitFlag(true);
 			enemy.SetHitPosition(enemy.GetPosition());
 			enemy.SetHp(enemy.GetHp() - player.GetPower());
+			player.SetMpCount(player.GetMpCount() + 1);
 			//player.SetAttackFlag(false);
 			player.SetDamageFlag(true);
 			for (int i = 0; i < 50; i++)
@@ -137,27 +138,61 @@ void CollisionManager::Judge(float elapsed_time, PlayerObj& player, EnemyObj& en
 				ParticleManager::getInstance()->Add_Board(std::make_shared<ParticleHit>(), ParticleManager::getInstance()->Fire1, DirectX::XMFLOAT3(enemy.GetHitPosition().x, enemy.GetHitPosition().y + 10, enemy.GetHitPosition().z));
 			}
 			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::HIT), false);
-			////ノックバック
-			//DirectX::XMVECTOR p = DirectX::XMLoadFloat3(&player.GetPosition());
-			//DirectX::XMVECTOR e = DirectX::XMLoadFloat3(&enemy.GetPosition());
-
-			//DirectX::XMVECTOR d =  DirectX::XMVectorSubtract(e,p);
-			//DirectX::XMVECTOR dir = DirectX::XMVector3Normalize(d);//正規化
-			//DirectX::XMFLOAT3 direction;
-			//DirectX::XMStoreFloat3(&direction,dir);
-
-			//enemy.SetDirection(direction);
-			/*enemy.SetKnockBackSpeed(30);
-			enemy.SetKnockBackTime(player.GetEnmKnockBack());
-			enemy.SetKnockBackFlag(true);*/
 		}
 	}
+	//playerjump攻撃時
+	if (player.GetJumpAttackFlag() && !player.GetDamageFlag())
+	{
+		//playerの攻撃範囲とボスとの当たり判定
+		Sphere playerAttackArea = player.GetHitSphere();
+		if (Collision::isHitCylinderSphere(enemyArea, playerAttackArea))
+		{
+			player.stopFlag = true;
+			enemy.SetHitFlag(true);
+			player.SetHitFlag(true);
+			enemy.SetHitPosition(enemy.GetPosition());
+			enemy.SetHp(enemy.GetHp() - player.GetPower());
+			player.SetMpCount(player.GetMpCount() + 1);
+			//enemy.SetKnockBackFlag(true, 1);
+			//player.SetAttackFlag(false);
+			player.SetDamageFlag(true);
+			enemy.SetShotAttackFlag(false);
+			for (int i = 0; i < 50; i++)
+			{
+				ParticleManager::getInstance()->Add_Board(std::make_shared<ParticleHit>(), ParticleManager::getInstance()->Fire1, DirectX::XMFLOAT3(enemy.GetHitPosition().x, enemy.GetHitPosition().y + 10, enemy.GetHitPosition().z));
+			}
+			/*	EffectObj::GetInstance().SetScale(EffectObj::TYPE::TST, DirectX::XMFLOAT3(4,4,4));
+				EffectObj::GetInstance().SetColor(EffectObj::TYPE::TST, DirectX::XMFLOAT4(1,1,1,1));
+				EffectObj::GetInstance().SetPosition(EffectObj::TYPE::TST, DirectX::XMFLOAT3(enemy.GetPosition().x, enemy.GetPosition().y-30, enemy.GetPosition().z));
+				EffectObj::GetInstance().Play(EffectObj::TYPE::TST);*/
+			SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::HIT), false);
+		}
+	}
+	//playersukill時
+	if (player.GetSukillHitFlag() && !player.GetDamageFlag())
+	{
+		player.stopFlag = true;
+		enemy.SetHitFlag(true);
+		player.SetHitFlag(true);
+		enemy.SetHp(enemy.GetHp() - player.GetPower());
+		//enemy.SetDownFlag(true);
+		enemy.SetKnockBackFlag(true, 1);
+		//player.SetAttackFlag(false);
+		player.SetDamageFlag(true);
+		enemy.SetShotAttackFlag(false);
+		SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::HIT), false);
+
+	}
+	//////////////////////////////////////////////////////
+	//ボスエネミーの攻撃時///////////////////////////////
+	//////////////////////////////////////////////////////
+
 	//enemyShot
-	if (enemy.GetShotAttackFlag()&&enemy.GetAttackFlag())
+	if (enemy.GetShotAttackFlag() && enemy.GetAttackFlag())
 	{
 		Sphere shotArea = enemy.GetShotSphere();
 		Sphere playerAttackArea = player.GetHitSphere();
-		if (Collision::isHitSphere(shotArea, playerAttackArea)&&player.GetAttackFlag())
+		if (Collision::isHitSphere(shotArea, playerAttackArea) && player.GetAttackFlag())
 		{
 			enemy.SetBounceFlag(true);
 		}
@@ -181,14 +216,13 @@ void CollisionManager::Judge(float elapsed_time, PlayerObj& player, EnemyObj& en
 				enemy.SetShotAttackFlag(false);
 				enemy.SetAttackFlag(false);
 				enemy.SetBounceFlag(false);
-				enemy.SetKnockBackFlag(true,1);
+				enemy.SetKnockBackFlag(true, 1);
 				enemy.SetHitFlag(true);
 				enemy.SetHp(enemy.GetHp() - player.GetPower());
 				SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::DAMAGE), false);
 			}
 		}
 	}
-	//ボスエネミーの攻撃時
 	if (enemy.GetAttackFlag() && !enemy.GetDamageFlag() && !player.GetAccelFlag())
 	{
 		//ボスの攻撃範囲とplayerとの当たり判定
@@ -237,7 +271,17 @@ void CollisionManager::Judge(float elapsed_time, PlayerObj& player, EnemyObj& en
 				enemy.SetDamageFlag(true);
 				SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDGAME::DAMAGE), false);
 				if (enemy.GetHighAttackFlag())  player.SetKnockBackFlag(true, 1);
-				else  player.SetKnockBackFlag(true, 0);
+				else
+				{
+					if (player.GetPosition().y > 0)
+					{
+						player.SetKnockBackFlag(true, 1);
+					}
+					else
+					{
+						player.SetKnockBackFlag(true, 0);
+					}
+				}
 			}
 		}
 	}

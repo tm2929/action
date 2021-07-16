@@ -52,13 +52,23 @@ SceneTitle::SceneTitle(ID3D11Device* device, HWND hwnd)
 			colorChangeFlag = false;
 			dissolveShader = std::make_unique<ShaderEx>();
 			D3D11_TEXTURE2D_DESC tex2D;
-			 load_texture_from_file(device, L"Data/dissolve/Dissolve_01_02.png", srv.GetAddressOf(), &tex2D);
+			load_texture_from_file(device, L"Data/dissolve/Shock_wave_ring001.png", srv.GetAddressOf(), &tex2D);
 			dissolveShader->Create(device, "Data/shaders/cso/sprite_vs.cso", "Data/shaders/cso/Dissolve_ps.cso");
+			frameBuffer[0] = std::make_unique<FrameBuffer>(device, 1920, 1080, true, 1, DXGI_FORMAT_R16G16B16A16_FLOAT, DXGI_FORMAT_R24G8_TYPELESS);
+			frameBuffer[1] = std::make_unique<FrameBuffer>(device, 1920, 1080, true, 1, DXGI_FORMAT_R16G16B16A16_FLOAT, DXGI_FORMAT_R24G8_TYPELESS);
+			bloomEffect = std::make_unique<Bloom>(device, 1920, 1080);
+			//èëÇ´èoÇµ
+			fullscreenQuad = std::make_unique<FullscreenQuad>(device);
+			dissolveColor = DirectX::XMFLOAT4(0, 0.3f, 0.8f, 1);
+			dissolveThreshold = 0;
+
+			colorTimerSpeed = 2.0f;
+			colorTimer = 0;
 		}, device);
-	soundManager = std::make_unique<SoundManager>(hwnd);
+	//soundManager = std::make_unique<SoundManager>(hwnd);
 	SoundManager::getinctance().Create(hwnd);
-	soundManager->CreateSoundSourceTitle();
-	soundManager->Play(static_cast<int>(SoundManager::SOUNDTITLE::TITLE_BGM), true);
+	SoundManager::getinctance().CreateSoundSourceTitle();
+	SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDTITLE::BGM), true);
 	blend = std::make_unique<BlendState>(device, BLEND_MODE::ALPHA);
 }
 
@@ -70,49 +80,79 @@ int SceneTitle::Update(float elapsed_time)
 	}
 	EndLoading();
 
-	if (pFadeOut.Update(elapsed_time))
+	if (FadeOut::GetInctence().Update(elapsed_time))
 	{
 
-		soundManager->Stop(static_cast<int>(SoundManager::SOUNDTITLE::TITLE_BGM));
+		SoundManager::getinctance().Stop(static_cast<int>(SoundManager::SOUNDTITLE::BGM));
 		return SceneName::GAME;
 	}
 	if (KeyInput::KeyTrigger() & KEY_ENTER || input::ButtonRisingState(0, input::PadLabel::A))
 	{
-		pFadeOut.MoveStart();
-		soundManager->Play(static_cast<int>(SoundManager::SOUNDTITLE::ENTER), false);
+		//FadeOut::GetInctence().MoveStart();
+		SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDTITLE::ENTER), false);
 		colorChangeFlag = true;
 	}
-	static DirectX::XMFLOAT2 tst = { 0,0 };
-	static DirectX::XMFLOAT4 dissolveColor = { 0,0,0,0 };
 	if (colorChangeFlag)
 	{
-		static float i = 0;
-		i += 1.0f * elapsed_time;
-		tst.x = i;
-		tst.y = i / 5;
-		if (i > 1.5f)
+		dissolveThreshold += elapsed_time * dissolveThresholdPlus;
+
+		if (dissolveThreshold > sceneChangeTimer)
 		{
-			pFadeOut.MoveStart();
+			FadeOut::GetInctence().MoveStart();
+			//dissolveThreshold = 0;
+			//colorChangeFlag = false;
 		}
 		titleTex->SetDissolveColor(dissolveColor);
-		titleTex->SetDissolveThreshold(tst.x);
-		titleTex->SetEmissiveWith(tst.y);
+		titleTex->SetDissolveThreshold(dissolveThreshold);
+		titleTex->SetEmissiveWidth(dissolveEmissiveWidth);
 
+		keyTex->SetDissolveColor(dissolveColor);
+		keyTex->SetDissolveThreshold(dissolveThreshold);
+		keyTex->SetEmissiveWidth(dissolveEmissiveWidth);
+		buttonTex->SetDissolveColor(dissolveColor);
+		buttonTex->SetDissolveThreshold(dissolveThreshold);
+		buttonTex->SetEmissiveWidth(dissolveEmissiveWidth);
 	}
-	
+
+	colorTimer += elapsed_time * colorTimerSpeed;
+	if (colorTimer <= colorTime[0])
+	{
+		texColorW = colorTimer;
+	}
+	else if (colorTimer <= colorTime[1])
+	{
+		texColorW = 1.0f;
+	}
+	else if (colorTimer <= colorTime[2])
+	{
+		texColorW = colorTime[2] - colorTimer;
+	}
+	else if (colorTimer <= colorTime[3])
+	{
+		texColorW = 0.0f;
+	}
+	if (colorTimer >= colorTime[3])
+	{
+		colorTimer = 0.0f;
+	}
 #ifdef USE_IMGUI
 	ImGui::Begin("Title");
-	if (ImGui::Button("BGM")) soundManager->Play(static_cast<int>(SoundManager::SOUNDTITLE::ENTER), false);
+	if (ImGui::Button("")) SoundManager::getinctance().Play(static_cast<int>(SoundManager::SOUNDTITLE::ENTER), false);
 
 	if (ImGui::Button("game_open"))
 	{
-		pFadeOut.MoveStart();
+		FadeOut::GetInctence().MoveStart();
 	}
-	
-	ImGui::InputFloat("dissolveThreshold", &tst.x, 0.1f);
-	ImGui::InputFloat("emissiveWith", &tst.y, 0.1f);
+
+	ImGui::InputFloat("dissolveThreshold", &dissolveThreshold, 0.1f);
+	ImGui::InputFloat("dissolveThresholdPlus", &dissolveThresholdPlus, 0.1f);
+	ImGui::InputFloat("sceneChangeTimer", &sceneChangeTimer, 0.1f);
+	ImGui::InputFloat("emissiveWith", &dissolveEmissiveWidth, 0.1f);
 	ImGui::ColorEdit3("dissolveColor", (float*)&dissolveColor);
 
+	float  blurConvolutionIntensity = bloomEffect->GetBlurConvolutionIntensity();
+	ImGui::InputFloat(u8"ÇµÇ´Ç¢íl", &blurConvolutionIntensity, 0.1f);
+	bloomEffect->SetBlurConvolutionIntensity(blurConvolutionIntensity);
 
 	ImGui::End();
 #endif
@@ -129,27 +169,39 @@ void SceneTitle::Render(float elapsed_time, ID3D11DeviceContext* devicecontext)
 	}
 	EndLoading();
 
-	
-	
-	blend->Activate(devicecontext);
+
+	frameBuffer[0]->Clear(devicecontext);
+	frameBuffer[0]->Activate(devicecontext);
+	{
+		blend->Activate(devicecontext);
 #ifdef USE_IMGUI
-	samplerWrap->Activate(devicecontext,0);
-	rasterizer->SetRasterizerState(RS_CULL_BACK, devicecontext);
+		//samplerWrap->Activate(devicecontext, 0);
+		//rasterizer->SetRasterizerState(RS_CULL_BACK, devicecontext);
 
-	//titleTex->DissolveRender(devicecontext, dissolveShader.get(), srv.Get(),0, 0, 1920, 1080, 0, 0, 1920, 1080, 0, 1, 1, 1, 1);
-	titleTex->DissolveRender(devicecontext, dissolveShader.get(), srv.Get(), 308, 300, 1050, 169, 0, 0, 1050, 169, 0, 1, 1, 1, 1);
+		//titleTex->DissolveRender(devicecontext, dissolveShader.get(), srv.Get(),0, 0, 1920, 1080, 0, 0, 1920, 1080, 0, 1, 1, 1, 1);
+		titleTex->DissolveRender(devicecontext, dissolveShader.get(), srv.Get(), 308, 300, 1050, 169, 0, 0, 1050, 169, 0, 1, 1, 1, 1);
 #else
-	titleTex->DissolveRender(devicecontext, dissolveShader.get(),srv.Get(), 308, 300, 1050, 169, 0, 0, 1050, 169, 0, 1, 1, 1, 1);
+		titleTex->DissolveRender(devicecontext, dissolveShader.get(), srv.Get(), 308, 300, 1050, 169, 0, 0, 1050, 169, 0, 1, 1, 1, 1);
 #endif
-	keyTex->Render(devicecontext, 300, 705, 346, 69, 0, 0, 346, 69, 0, 1, 1, 1, 0.8f); 
-	buttonTex->Render(devicecontext, 700, 700, 84, 84, 0, 0, 84, 84, 0, 1, 1, 1, 0.8f);
-	pFadeOut.Render(devicecontext);
+		keyTex->DissolveRender(devicecontext, dissolveShader.get(), srv.Get(), 300, 705, 346, 69, 0, 0, 346, 69, 0, 1, 1, 1, 0.8f);
+		buttonTex->DissolveRender(devicecontext, dissolveShader.get(), srv.Get(), 700, 700, 84, 84, 0, 0, 84, 84, 0, 1, 1, 1, texColorW);
+		FadeOut::GetInctence().Render(devicecontext);
 
-	samplerWrap->Deactivate(devicecontext);
-	blend->Deactivate(devicecontext);
+		//samplerWrap->Deactivate(devicecontext);
+		blend->Deactivate(devicecontext);
+	}
+	frameBuffer[0]->Deactivate(devicecontext);
 
+
+	//ç≈èIâÊñ ï`âÊÅ@
+	devicecontext->PSSetShaderResources(0, 1, frameBuffer[0]->GetRenderTargetShaderResourceView().GetAddressOf());
+	fullscreenQuad->Blit(devicecontext, true, true, true);//ì]ëó
+
+	bloomEffect->Generate(devicecontext, frameBuffer[0]->GetRenderTargetShaderResourceView().Get());
+	bloomEffect->Blit(devicecontext);
 }
 SceneTitle::~SceneTitle()
 {
+	SoundManager::getinctance().Destroy();
 	//pLoadModel.Destory();
 }

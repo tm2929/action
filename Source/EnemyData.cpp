@@ -8,16 +8,19 @@ void EnemyHitData::Init()
 	attackPower[1] = 5.f;//“ñŒ‚–Ú
 	attackPower[2] = 10.f;//‚RŒ‚–Ú
 
-	pulsPos = { 10.f,10.f,10.f };
+	plusPos = { 10.f,10.f,10.f };
 
 	hitLength = 6.0f;
 	hitAttackLength = 12.0f;
 
-	pulsDamage = 0.f;
+	plusDamage = 0.f;
 
 	attackTime = 0.5f;
 
 	count = 0;
+
+	downTime = 3.f;
+	sukillDownTime = 6.f;
 }
 
 void EnemyChoiceData::Init()
@@ -73,4 +76,16 @@ void EnemyThunderData::Init()
 	attackStartTime = 0.2f;
 	attackEndTime = 0.9f;
 	endTime = 2.0f;
+}
+
+void EnemyRAttackData::Init()
+{
+	dispMaxTimer = 0.5f;
+	easingScale1 = 30;
+	easingScale2 = 30;
+	easingColor = 4.f;
+	effectColorW1 = 1;
+	effectColorW2 = 1;
+	defaultScale1 = DirectX::XMFLOAT3(0, 3.5f, 0);
+	defaultScale2 = DirectX::XMFLOAT3(0, 3.5f, 0);
 }

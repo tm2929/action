@@ -17,7 +17,7 @@ bool Collision::isHitAABB(const AABB& obj1, const AABB& obj2)
 
 bool Collision::isHitCylinder(const Cylinder& obj1, const Cylinder& obj2)
 {
-	if (obj1.max.y < obj2.min.y && obj1.min.y < obj2.max.y)return false;
+	if (obj1.max.y <= obj2.min.y && obj1.min.y <= obj2.max.y)return false;
 
 
 	float leng = (obj1.min.x - obj2.min.x) * (obj1.min.x - obj2.min.x) + (obj1.min.z - obj2.min.z) * (obj1.min.z - obj2.min.z);

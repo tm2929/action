@@ -30,7 +30,7 @@ private:
 	};
 	std::unique_ptr<ConstantBuffer<FogShaderConstants>>fogBuffer;
 public:
-	void SetFogNear(float fogNear)
+	void SetFogNear(float fogNear = 1.0f)
 	{
 		fogBuffer->data.fogNear = fogNear;
 	}

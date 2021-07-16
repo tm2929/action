@@ -118,15 +118,15 @@ void Stage::Update(float elapsedTime)
 	back2Cube.HitAreaTransform({ -259,0,228 }, { 0,0,0 }, { 184,60,100 });
 	haka2Cube.HitAreaTransform({ -75,0,231 }, { 0,0,0 }, { 142,60,100 });
 
-	pHitAreaRender.SetHitCube(left1Cube.min, left1Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
-	pHitAreaRender.SetHitCube(left2Cube.min, left2Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
-	pHitAreaRender.SetHitCube(right1Cube.min, right1Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
-	pHitAreaRender.SetHitCube(right2Cube.min, right2Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
-	pHitAreaRender.SetHitCube(front1Cube.min, front1Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
-	pHitAreaRender.SetHitCube(front2Cube.min, front2Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
-	pHitAreaRender.SetHitCube(haka1Cube.min, haka1Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
-	pHitAreaRender.SetHitCube(back1Cube.min, back1Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
-	pHitAreaRender.SetHitCube(haka2Cube.min, haka2Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
+	HitAreaRnder::GetInctance().SetHitCube(left1Cube.min, left1Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
+	HitAreaRnder::GetInctance().SetHitCube(left2Cube.min, left2Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
+	HitAreaRnder::GetInctance().SetHitCube(right1Cube.min, right1Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
+	HitAreaRnder::GetInctance().SetHitCube(right2Cube.min, right2Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
+	HitAreaRnder::GetInctance().SetHitCube(front1Cube.min, front1Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
+	HitAreaRnder::GetInctance().SetHitCube(front2Cube.min, front2Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
+	HitAreaRnder::GetInctance().SetHitCube(haka1Cube.min, haka1Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
+	HitAreaRnder::GetInctance().SetHitCube(back1Cube.min, back1Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
+	HitAreaRnder::GetInctance().SetHitCube(haka2Cube.min, haka2Cube.max, DirectX::XMFLOAT4(1, 1, 1, 0.3f));
 }
 void Stage::Imgui()
 {

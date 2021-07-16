@@ -9,7 +9,7 @@ using namespace DirectX;
 class TexMeshObj
 {
 public:
-	TexMeshObj(/*bool useShadow = false*/) { texture = std::make_shared<Texture>(); }
+	TexMeshObj(/*bool useShadow = false*/) { texture = std::make_shared<Texture>();  }
 	~TexMeshObj() {}
 
 	enum class ObjectType
